@@ -351,7 +351,61 @@ interface ConsentConfig {
 }
 ```
 
-## Appendix B: Configuration Template
+## Appendix B: Replit Platform Security Best Practices (2025)
+
+Based on Replit's official security documentation and "Secure Vibe Coding" guidelines:
+
+### Secrets Management
+- **Use Replit Secrets** (not .env files) - AES-256 encryption at rest
+- **Never hardcode API keys** - use `process.env.SECRET_NAME`
+- **Never paste secrets in chat** - Replit Agent prompts are monitored
+- **Rotate secrets every 30-90 days**
+
+### Pre-Deployment Security
+- **Enable Semgrep CE scanning** before deployment
+- **Review AI-generated code** - up to 40% may contain vulnerabilities
+- **Use one-click fix** for automatically resolving flagged issues
+
+### 16-Point Security Checklist
+1. Never expose secrets in frontend code
+2. Separate front-end and back-end
+3. Implement CSRF protection
+4. Add security headers (test at securityheaders.com)
+5. Use ORMs for database queries
+6. Validate and sanitize all user inputs
+7. Implement rate limiting
+8. Use HTTPS everywhere (Replit default)
+9. Use modern authentication (OAuth2, JWT)
+10. Implement RBAC
+11. Enable SSO (Teams/Enterprise)
+12. Keep dependencies updated
+13. Proper error handling (hide stack traces)
+14. Monitor and log activity
+15. Review AI-generated code before deploying
+16. Be cautious with third-party services
+
+### Red Flags to Avoid
+| Mistake | Solution |
+|---------|----------|
+| Hardcoding API keys | Use Replit Secrets |
+| Storing secrets in .env | Use Secrets tool |
+| No input validation | Sanitize all inputs |
+| Ignoring dependency updates | Regular updates + Semgrep |
+| Trusting AI code blindly | Always review before deploying |
+| Printing secrets to logs | Use masked logging |
+| Skipping pre-deployment scans | Enable Semgrep scanning |
+
+### Enterprise Features
+- SOC 2 Type 2 compliance
+- Private Deployments
+- SSO (Single Sign-On)
+- Role-Based Access Controls
+- TLS 1.2+ encryption
+- Google Cloud Platform infrastructure
+
+---
+
+## Appendix C: Configuration Template
 
 Add to consuming project's `replit.md`:
 
