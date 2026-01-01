@@ -88,6 +88,12 @@ Before any commit:
 
 ## Recent Changes
 
+- **Phase 4 In Progress: Consumer Tooling**
+  - CLI entry point (src/cli.ts) with invoke and scan commands
+  - FakeDataScanner for QA automation detecting fake data, placeholder text, security issues, PII
+  - GitHub Actions workflow template (templates/github-action.yml)
+  - 284 regression tests passing (12 test files): +24 scanner tests
+
 - **Phase 3 Complete: Self-Learning Infrastructure (VERIFIED)**
   - PromptOptimizer service for A/B testing prompt variants with traffic allocation and statistical significance testing
   - OutcomeLearner for analyzing telemetry data and generating improvement signals
@@ -133,3 +139,15 @@ Before any commit:
 - `src/logger.ts` - Pino-based structured logging
 - `src/validation.ts` - Validation and security enforcement
 - `src/agents/` - Agent implementations and orchestration
+- `src/cli.ts` - CLI entry point for command-line usage
+- `src/scanner.ts` - Fake data scanner for QA automation
+
+## CLI Commands
+
+- `ai-agents invoke <agent> <prompt>` - Invoke an AI agent (architect, mechanic, ninja, philosopher)
+- `ai-agents scan <path>` - Scan code for fake/placeholder data, security issues, PII
+- `ai-agents help` - Show help message
+
+Options:
+- `--strict` - Use strict configuration for invoke, or fail on warnings for scan
+- `--ext <extensions>` - File extensions to scan (comma-separated)

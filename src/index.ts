@@ -109,3 +109,12 @@ export {
 } from "./types";
 
 export type { GrokResponse } from "./agents/grok-client";
+
+// QA Scanner
+export { 
+  FakeDataScanner, 
+  createScanner,
+  type ScannerOptions,
+  type ScanIssue,
+  type ScanResult,
+} from "./scanner";
