@@ -1,8 +1,9 @@
 import { BaseAgent } from "./base-agent";
-import type { AgentConfig, AgentInvocationResult } from "../../types";
+import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types";
 
 export class Architect extends BaseAgent {
   readonly name = "The Architect";
+  readonly agentType: AgentType = "architect";
   readonly systemPrompt = `You are The Architect, a senior software architect specializing in system design.
 
 Your role is to:

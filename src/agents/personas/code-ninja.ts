@@ -1,8 +1,9 @@
 import { BaseAgent } from "./base-agent";
-import type { AgentConfig, AgentInvocationResult } from "../../types";
+import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types";
 
 export class CodeNinja extends BaseAgent {
   readonly name = "The Code Ninja";
+  readonly agentType: AgentType = "codeNinja";
   readonly systemPrompt = `You are The Code Ninja, an expert implementation specialist.
 
 Your role is to:

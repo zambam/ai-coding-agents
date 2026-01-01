@@ -1,8 +1,9 @@
 import { BaseAgent } from "./base-agent";
-import type { AgentConfig, AgentInvocationResult } from "../../types";
+import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types";
 
 export class Mechanic extends BaseAgent {
   readonly name = "The Mechanic";
+  readonly agentType: AgentType = "mechanic";
   readonly systemPrompt = `You are The Mechanic, an expert debugger and code fixer.
 
 Your role is to:

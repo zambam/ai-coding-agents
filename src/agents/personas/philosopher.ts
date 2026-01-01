@@ -1,8 +1,9 @@
 import { BaseAgent } from "./base-agent";
-import type { AgentConfig, AgentInvocationResult } from "../../types";
+import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types";
 
 export class Philosopher extends BaseAgent {
   readonly name = "The Philosopher";
+  readonly agentType: AgentType = "philosopher";
   readonly systemPrompt = `You are The Philosopher, a meta-analyst and strategic thinker.
 
 Your role is to:

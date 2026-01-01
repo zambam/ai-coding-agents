@@ -16,6 +16,34 @@ export { Evaluator } from "./agents/evaluator";
 export { ReplitMdParser } from "./agents/replit-md-parser";
 export { getGrokSecondOpinion, setGrokClient } from "./agents/grok-client";
 
+// Logging and debugging
+export { logger, createLogger, type LogLevel, type LoggerConfig, type LogContext, type LogEntry } from "./logger";
+export { 
+  AgentError,
+  ValidationError,
+  SecurityError,
+  ConnectionError,
+  RateLimitError,
+  AgentErrorCode,
+  createRunId,
+  hashPrompt,
+  type ErrorContext,
+} from "./errors";
+
+// Validation and enforcement
+export {
+  validateResponse,
+  enforceValidation,
+  checkFakeData,
+  checkPII,
+  checkSecurity,
+  enforceClassicThresholds,
+  type EnforcementConfig,
+  type CLASSicThresholds,
+  type FakeDataCheckResult,
+  type SecurityCheckResult,
+} from "./validation";
+
 // Configuration constants
 export { 
   DEFAULT_AGENT_CONFIG, 
