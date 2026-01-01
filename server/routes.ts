@@ -275,6 +275,60 @@ export async function registerRoutes(
     });
   });
 
+  app.get("/api/telemetry/prompt-variants", async (req: Request, res: Response) => {
+    try {
+      const agentType = req.query.agentType as AgentType | undefined;
+      const status = req.query.status as string | undefined;
+      const validStatuses = ["shadow", "ab_test", "promoted", "retired"];
+      
+      if (agentType) {
+        const validAgentTypes: AgentType[] = ["architect", "mechanic", "codeNinja", "philosopher"];
+        if (!validAgentTypes.includes(agentType)) {
+          return res.status(400).json({ error: "Invalid agent type" });
+        }
+        if (status && validStatuses.includes(status)) {
+          const variants = await storage.getVariantsByStatus(agentType, status as "shadow" | "ab_test" | "promoted" | "retired");
+          return res.json({ variants, count: variants.length });
+        }
+        const promoted = await storage.getPromotedVariant(agentType);
+        return res.json({ promotedVariant: promoted || null, agentType });
+      }
+      
+      res.json({ 
+        message: "Provide agentType query parameter to retrieve prompt variants",
+        supportedAgents: ["architect", "mechanic", "codeNinja", "philosopher"],
+        supportedStatuses: validStatuses
+      });
+    } catch (error) {
+      console.error("Error fetching prompt variants:", error);
+      res.status(500).json({ error: "Failed to fetch prompt variants" });
+    }
+  });
+
+  app.get("/api/telemetry/memory", async (req: Request, res: Response) => {
+    try {
+      const agentType = req.query.agentType as AgentType | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      if (agentType) {
+        const validAgentTypes: AgentType[] = ["architect", "mechanic", "codeNinja", "philosopher"];
+        if (!validAgentTypes.includes(agentType)) {
+          return res.status(400).json({ error: "Invalid agent type" });
+        }
+        const entries = await storage.findSimilarMemories(agentType, [], limit);
+        return res.json({ entries, count: entries.length, agentType });
+      }
+      
+      res.json({ 
+        message: "Provide agentType query parameter to retrieve memory entries",
+        supportedAgents: ["architect", "mechanic", "codeNinja", "philosopher"]
+      });
+    } catch (error) {
+      console.error("Error fetching memory entries:", error);
+      res.status(500).json({ error: "Failed to fetch memory entries" });
+    }
+  });
+
   app.get("/api/telemetry/outcomes", async (req: Request, res: Response) => {
     try {
       const agentType = req.query.agentType as AgentType | undefined;
