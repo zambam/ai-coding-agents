@@ -271,5 +271,6 @@ export function enforceClassicThresholds(
 
   if (failures.length > 0) {
     logger.warn("CLASSic threshold violations", { agentType, failures, metrics });
+    throw new ValidationError(failures, errorContext);
   }
 }

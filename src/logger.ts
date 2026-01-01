@@ -33,6 +33,7 @@ export interface LoggerConfig {
   prettyPrint: boolean;
   destination?: string;
   redactPrompts: boolean;
+  stream?: NodeJS.WritableStream | { write: (chunk: string) => void };
 }
 
 const DEFAULT_CONFIG: LoggerConfig = {
@@ -49,23 +50,31 @@ class Logger {
   constructor(config: Partial<LoggerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     
-    const transport = this.config.prettyPrint
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-            translateTime: "SYS:standard",
-            ignore: "pid,hostname",
-          },
-        }
-      : undefined;
+    if (this.config.stream) {
+      this.pino = pino({
+        level: this.config.level,
+        base: { service: "ai-coding-agents" },
+        timestamp: pino.stdTimeFunctions.isoTime,
+      }, this.config.stream);
+    } else {
+      const transport = this.config.prettyPrint
+        ? {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+              ignore: "pid,hostname",
+            },
+          }
+        : undefined;
 
-    this.pino = pino({
-      level: this.config.level,
-      transport,
-      base: { service: "ai-coding-agents" },
-      timestamp: pino.stdTimeFunctions.isoTime,
-    });
+      this.pino = pino({
+        level: this.config.level,
+        transport,
+        base: { service: "ai-coding-agents" },
+        timestamp: pino.stdTimeFunctions.isoTime,
+      });
+    }
   }
 
   startRun(agentType?: AgentType): string {
@@ -185,8 +194,8 @@ class Logger {
     };
 
     if (level === "error") {
-      this.error(message, undefined, {});
-      this.pino.error(data, message);
+      const entry = this.buildEntry("error", message, data, {});
+      this.pino.error(entry, message);
     } else if (level === "warn") {
       this.warn(message, data);
     } else {
