@@ -88,12 +88,14 @@ Before any commit:
 
 ## Recent Changes
 
-- **Phase 3 In Progress: Self-Learning Infrastructure**
-  - PromptOptimizer service for A/B testing prompt variants with traffic allocation
+- **Phase 3 Complete: Self-Learning Infrastructure (VERIFIED)**
+  - PromptOptimizer service for A/B testing prompt variants with traffic allocation and statistical significance testing
   - OutcomeLearner for analyzing telemetry data and generating improvement signals
-  - MemoryManager for RAG-style context retrieval using similarity search
-  - Learning components integrated into Orchestrator (invokeWithLearning, recordOutcome, getLearningInsights)
+  - MemoryManager for RAG-style context retrieval using bag-of-words embeddings and cosine similarity search
+  - Learning components integrated into Orchestrator (invokeWithLearning, recordOutcome, getLearningInsights, evaluateAndOptimize)
+  - BaseAgent.invokeWithSystemPrompt() enables prompt variant delivery via system prompt override
   - 260 regression tests passing (11 test files): +20 learning tests
+  - Learning loop complete: selectPromptVariant → invokeWithSystemPrompt → recordOutcome → evaluateAndOptimize → promoteWinner
 
 - **Phase 2 Complete: Data Telemetry + Security Infrastructure (VERIFIED)**
   - Database schemas (RunOutcome, HumanFeedback, PromptVariant, MemoryEntry) in shared/schema.ts
