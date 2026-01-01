@@ -1,0 +1,83 @@
+import { 
+  Architect, 
+  Mechanic, 
+  CodeNinja,
+  Orchestrator,
+  Philosopher,
+  DEFAULT_AGENT_CONFIG 
+} from 'rest-express/src';
+
+const OPTIMIZED_CONFIG = {
+  ...DEFAULT_AGENT_CONFIG,
+  maxTokens: 2048,
+  temperature: 0.6,
+  enablePhilosopher: false,
+  validationLevel: 'low' as const,  // Relaxed thresholds to avoid latency errors
+};
+
+const RELAXED_CONFIG = {
+  ...DEFAULT_AGENT_CONFIG,
+  validationLevel: 'low' as const,  // 60s latency threshold instead of 20s
+};
+
+// Quick 2-agent review: Design + Debug
+async function quickReview(task: string) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY required');
+  
+  const architect = new Architect(RELAXED_CONFIG, apiKey);
+  const blueprint = await architect.invoke(task);
+  
+  const mechanic = new Mechanic(RELAXED_CONFIG, apiKey);
+  const fixes = await mechanic.invoke("Check for issues: " + blueprint.response.recommendation);
+  return { blueprint, fixes };
+}
+
+// Quick implement: Implement + Debug
+async function quickImplement(task: string) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY required');
+  
+  const ninja = new CodeNinja(RELAXED_CONFIG, apiKey);
+  const code = await ninja.invoke(task);
+  
+  const mechanic = new Mechanic(RELAXED_CONFIG, apiKey);
+  const optimized = await mechanic.invoke("Optimize and document: " + code.response.recommendation);
+  return { code, optimized };
+}
+
+// Multi-step review: 5-7 steps emulating iterative refinement process
+async function multiStepReview(task: string, steps: number = 5) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY required');
+
+  const orchestrator = new Orchestrator(OPTIMIZED_CONFIG, apiKey);
+
+  // Step 1: Initial Architect design
+  let blueprint = await orchestrator.invokeAgent('architect', task);
+
+  for (let i = 1; i < steps; i++) {
+    // Step 2+: Mechanic debug + refine
+    const fixes = await orchestrator.invokeAgent(
+      'mechanic', 
+      `Iteration ${i}: Refine and fix: ${blueprint.response.recommendation}`
+    );
+
+    // Feed back to Architect for next refinement
+    blueprint = await orchestrator.invokeAgent(
+      'architect',
+      `Incorporate fixes: ${fixes.response.recommendation}`
+    );
+  }
+
+  // Final: Optional Philosopher meta-review
+  if (OPTIMIZED_CONFIG.enablePhilosopher) {
+    const philosopher = new Philosopher(OPTIMIZED_CONFIG, apiKey);
+    const evaluation = await philosopher.invoke(`Final meta-review: ${blueprint.response.recommendation}`);
+    return { blueprint, evaluation };
+  }
+
+  return blueprint;
+}
+
+export { quickReview, quickImplement, multiStepReview };

@@ -158,3 +158,36 @@ Before any commit:
 Options:
 - `--strict` - Use strict configuration for invoke, or fail on warnings for scan
 - `--ext <extensions>` - File extensions to scan (comma-separated)
+
+## Workflow Scripts
+
+Multi-agent workflow scripts for development and testing:
+
+```bash
+# Interactive mode - menu-driven agent selection
+npx tsx scripts/run-workflow.ts interactive
+
+# Quick review - Architect + Mechanic (2 agents)
+npx tsx scripts/run-workflow.ts quick-review "Design a REST API"
+
+# Quick implement - Code Ninja + Mechanic (2 agents)  
+npx tsx scripts/run-workflow.ts quick-implement "Create email validation"
+
+# Full pipeline - All 4 agents
+npx tsx scripts/run-workflow.ts pipeline "Build auth system"
+
+# Multi-step review - Iterative refinement (3+ steps)
+npx tsx scripts/run-workflow.ts multi-step "Design microservices"
+
+# Diagnose - Debug an error with Mechanic
+npx tsx scripts/run-workflow.ts diagnose "TypeError in auth.js"
+```
+
+Individual scripts:
+- `scripts/quick-review.ts` - Architect + Mechanic
+- `scripts/quick-implement.ts` - Code Ninja + Mechanic
+- `scripts/full-pipeline.ts` - All 4 agents
+- `scripts/multi-step.ts` - Iterative refinement
+- `scripts/diagnose.ts` - Error debugging
+- `scripts/code-review.ts` - Review a file
+- `scripts/single-agent.ts` - Run one agent
