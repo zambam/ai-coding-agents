@@ -267,7 +267,7 @@ export function rateLimitMiddleware(options: { windowMs?: number; maxRequests?: 
 
   setInterval(() => {
     const now = Date.now();
-    for (const [ip, record] of requests.entries()) {
+    for (const [ip, record] of Array.from(requests.entries())) {
       if (now > record.resetAt) {
         requests.delete(ip);
       }

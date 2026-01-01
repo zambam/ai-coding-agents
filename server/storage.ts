@@ -106,8 +106,8 @@ export class MemStorage implements IStorage, IDataTelemetry {
     const runOutcome: RunOutcome = {
       id,
       runId: outcome.runId,
-      agentType: outcome.agentType,
-      outcomeStatus: outcome.outcomeStatus,
+      agentType: outcome.agentType as AgentType,
+      outcomeStatus: outcome.outcomeStatus as RunOutcome["outcomeStatus"],
       editDistance: outcome.editDistance ?? null,
       timeToDecision: outcome.timeToDecision ?? null,
       grokAgreed: outcome.grokAgreed ?? null,
@@ -145,8 +145,8 @@ export class MemStorage implements IStorage, IDataTelemetry {
       grokAgreed: updates.grokAgreed !== undefined ? updates.grokAgreed ?? null : existing.grokAgreed,
       classicMetrics: updates.classicMetrics !== undefined ? updates.classicMetrics ?? null : existing.classicMetrics,
       promptVersion: updates.promptVersion !== undefined ? updates.promptVersion ?? null : existing.promptVersion,
-      outcomeStatus: updates.outcomeStatus ?? existing.outcomeStatus,
-      agentType: updates.agentType ?? existing.agentType,
+      outcomeStatus: (updates.outcomeStatus ?? existing.outcomeStatus) as RunOutcome["outcomeStatus"],
+      agentType: (updates.agentType ?? existing.agentType) as AgentType,
       runId: updates.runId ?? existing.runId,
     };
     this.runOutcomes.set(runId, updated);
@@ -220,10 +220,10 @@ export class MemStorage implements IStorage, IDataTelemetry {
     const id = randomUUID();
     const promptVariant: PromptVariant = {
       id,
-      agentType: variant.agentType,
+      agentType: variant.agentType as AgentType,
       version: variant.version,
       promptText: variant.promptText,
-      status: variant.status,
+      status: variant.status as PromptVariant["status"],
       trafficPercent: variant.trafficPercent ?? null,
       metrics: variant.metrics ?? null,
       createdAt: new Date(),
@@ -263,10 +263,10 @@ export class MemStorage implements IStorage, IDataTelemetry {
     if (!existing) return undefined;
     const updated: PromptVariant = {
       ...existing,
-      agentType: updates.agentType ?? existing.agentType,
+      agentType: (updates.agentType ?? existing.agentType) as AgentType,
       version: updates.version ?? existing.version,
       promptText: updates.promptText ?? existing.promptText,
-      status: updates.status ?? existing.status,
+      status: (updates.status ?? existing.status) as PromptVariant["status"],
       trafficPercent: updates.trafficPercent !== undefined ? updates.trafficPercent ?? null : existing.trafficPercent,
       metrics: updates.metrics !== undefined ? updates.metrics ?? null : existing.metrics,
       promotedAt: updates.promotedAt !== undefined ? updates.promotedAt ?? null : existing.promotedAt,
@@ -291,7 +291,7 @@ export class MemStorage implements IStorage, IDataTelemetry {
     const id = randomUUID();
     const memoryEntry: MemoryEntry = {
       id,
-      agentType: entry.agentType,
+      agentType: entry.agentType as AgentType,
       taskDescription: entry.taskDescription,
       taskEmbedding: entry.taskEmbedding ?? null,
       response: entry.response,
