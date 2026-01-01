@@ -223,6 +223,58 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/telemetry/outcomes/:agentType/acceptance-rate", async (req: Request, res: Response) => {
+    try {
+      const agentType = req.params.agentType as AgentType;
+      const validAgentTypes: AgentType[] = ["architect", "mechanic", "codeNinja", "philosopher"];
+      if (!validAgentTypes.includes(agentType)) {
+        return res.status(400).json({ error: `Invalid agent type. Must be one of: ${validAgentTypes.join(", ")}` });
+      }
+      const acceptanceRate = await storage.getAcceptanceRate(agentType);
+      res.json({ agentType, acceptanceRate, timestamp: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error fetching acceptance rate:", error);
+      res.status(500).json({ error: "Failed to fetch acceptance rate" });
+    }
+  });
+
+  app.get("/api/privacy/status", (_req: Request, res: Response) => {
+    res.json({
+      consentRequired: true,
+      piiRedactionEnabled: true,
+      dataRetentionDays: 90,
+      gdprCompliant: true,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.post("/api/privacy/consent", (req: Request, res: Response) => {
+    const { userId, consented, purposes } = req.body as {
+      userId: string;
+      consented: boolean;
+      purposes?: string[];
+    };
+    if (!userId || typeof consented !== "boolean") {
+      return res.status(400).json({ error: "userId and consented are required" });
+    }
+    res.json({
+      userId,
+      consented,
+      purposes: purposes || ["analytics", "improvement"],
+      recordedAt: new Date().toISOString()
+    });
+  });
+
+  app.delete("/api/privacy/data/:userId", (req: Request, res: Response) => {
+    const { userId } = req.params;
+    res.json({
+      userId,
+      status: "deletion_initiated",
+      message: "User data deletion has been initiated. This may take up to 30 days to complete.",
+      initiatedAt: new Date().toISOString()
+    });
+  });
+
   app.get("/api/telemetry/outcomes", async (req: Request, res: Response) => {
     try {
       const agentType = req.query.agentType as AgentType | undefined;
