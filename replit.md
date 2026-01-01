@@ -88,6 +88,14 @@ Before any commit:
 
 ## Recent Changes
 
+- **Phase 2 In Progress: Data Telemetry + Security Infrastructure**
+  - Database schemas (RunOutcome, HumanFeedback, PromptVariant, MemoryEntry) in shared/schema.ts
+  - Storage layer with IDataTelemetry interface and MemStorage CRUD operations
+  - Telemetry API routes with shared schema validation (insertRunOutcomeSchema, insertHumanFeedbackSchema)
+  - Logger factory with env var resolution (AI_AGENTS_*) and file/HTTP destinations
+  - Security middleware with deep checks, unicode normalization, bounded rate limiting
+  - Privacy controls with consent management, PII redaction, GDPR routes
+
 - **Phase 1 Complete: Logging + Debugging Infrastructure (VERIFIED)**
   - Pino-based structured JSON logging with log levels (trace/debug/info/warn/error/fatal)
   - Error taxonomy with AgentErrorCode enum (E001-E205) for recoverable/non-recoverable errors

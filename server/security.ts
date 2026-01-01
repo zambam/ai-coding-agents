@@ -256,7 +256,8 @@ export function runDeepSecurityChecks(input: unknown, options: { blockOnDetectio
     events.push(...result.events);
   }
 
-  const safe = events.every((e) => !e.blocked);
+  const hasBlockedEvents = events.some((e) => e.blocked);
+  const safe = !hasBlockedEvents;
   return { safe, events };
 }
 
