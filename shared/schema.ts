@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -195,3 +195,113 @@ export const AGENT_PERSONAS: AgentPersona[] = [
     color: "chart-3"
   }
 ];
+
+export const OUTCOME_STATUSES = ["accepted", "rejected", "edited", "ignored"] as const;
+export type OutcomeStatus = typeof OUTCOME_STATUSES[number];
+
+export const PROMPT_STATUSES = ["shadow", "ab_test", "promoted", "retired"] as const;
+export type PromptStatus = typeof PROMPT_STATUSES[number];
+
+export const FEEDBACK_TAGS = [
+  "too_verbose",
+  "too_brief",
+  "incorrect",
+  "off_topic",
+  "helpful",
+  "creative",
+  "slow",
+  "confusing",
+] as const;
+export type FeedbackTag = typeof FEEDBACK_TAGS[number];
+
+export interface PromptMetrics {
+  acceptanceRate: number;
+  avgEditDistance: number;
+  avgLatency: number;
+  sampleSize: number;
+  pValue?: number;
+}
+
+export interface StoredCLASSicMetrics {
+  cost: number;
+  latency: number;
+  accuracy: number;
+  security: number;
+  stability: number;
+}
+
+export const runOutcomes = pgTable("run_outcomes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  runId: text("run_id").notNull().unique(),
+  agentType: text("agent_type").notNull().$type<AgentType>(),
+  outcomeStatus: text("outcome_status").notNull().$type<OutcomeStatus>(),
+  editDistance: integer("edit_distance"),
+  timeToDecision: integer("time_to_decision_ms"),
+  grokAgreed: boolean("grok_agreed"),
+  classicMetrics: jsonb("classic_metrics").$type<StoredCLASSicMetrics>(),
+  promptVersion: text("prompt_version"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertRunOutcomeSchema = createInsertSchema(runOutcomes).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertRunOutcome = z.infer<typeof insertRunOutcomeSchema>;
+export type RunOutcome = typeof runOutcomes.$inferSelect;
+
+export const humanFeedback = pgTable("human_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  runId: text("run_id").notNull(),
+  rating: integer("rating"),
+  tags: text("tags").array(),
+  comment: text("comment"),
+  submittedAt: timestamp("submitted_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertHumanFeedbackSchema = createInsertSchema(humanFeedback).omit({
+  id: true,
+  submittedAt: true,
+});
+export type InsertHumanFeedback = z.infer<typeof insertHumanFeedbackSchema>;
+export type HumanFeedback = typeof humanFeedback.$inferSelect;
+
+export const promptVariants = pgTable("prompt_variants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentType: text("agent_type").notNull().$type<AgentType>(),
+  version: integer("version").notNull(),
+  promptText: text("prompt_text").notNull(),
+  status: text("status").notNull().$type<PromptStatus>(),
+  trafficPercent: integer("traffic_percent").default(0),
+  metrics: jsonb("metrics").$type<PromptMetrics>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  promotedAt: timestamp("promoted_at"),
+  retiredAt: timestamp("retired_at"),
+});
+
+export const insertPromptVariantSchema = createInsertSchema(promptVariants).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertPromptVariant = z.infer<typeof insertPromptVariantSchema>;
+export type PromptVariant = typeof promptVariants.$inferSelect;
+
+export const memoryEntries = pgTable("memory_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentType: text("agent_type").notNull().$type<AgentType>(),
+  taskDescription: text("task_description").notNull(),
+  taskEmbedding: real("task_embedding").array(),
+  response: text("response").notNull(),
+  qualityScore: real("quality_score").notNull(),
+  accessCount: integer("access_count").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertMemoryEntrySchema = createInsertSchema(memoryEntries).omit({
+  id: true,
+  createdAt: true,
+  accessCount: true,
+});
+export type InsertMemoryEntry = z.infer<typeof insertMemoryEntrySchema>;
+export type MemoryEntry = typeof memoryEntries.$inferSelect;

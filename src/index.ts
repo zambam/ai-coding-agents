@@ -17,7 +17,16 @@ export { ReplitMdParser } from "./agents/replit-md-parser";
 export { getGrokSecondOpinion, setGrokClient } from "./agents/grok-client";
 
 // Logging and debugging
-export { logger, createLogger, type LogLevel, type LoggerConfig, type LogContext, type LogEntry } from "./logger";
+export { 
+  logger, 
+  createLogger, 
+  createAgentLogger, 
+  getLoggerConfig,
+  resolveEnvConfig,
+  type LogContext, 
+  type LogEntry,
+  type LoggerConfig as PinoLoggerConfig,
+} from "./logger";
 export { 
   AgentError,
   ValidationError,
@@ -69,6 +78,34 @@ export type {
   ConsistencyMode,
   ReplitMdConfig,
   AgentPersona,
+  OutcomeStatus,
+  PromptStatus,
+  FeedbackTag,
+  PromptMetrics,
+  StoredCLASSicMetrics,
+  RunOutcome,
+  InsertRunOutcome,
+  HumanFeedback,
+  InsertHumanFeedback,
+  PromptVariant,
+  InsertPromptVariant,
+  MemoryEntry,
+  InsertMemoryEntry,
+  LogLevel,
+  LogDestination,
+  LoggerConfig,
+  SecurityEvent,
+  RunDiagnostics,
+  ExportedRunBundle,
+  DiagnosticsOptions,
+} from "./types";
+
+export { 
+  OUTCOME_STATUSES, 
+  PROMPT_STATUSES, 
+  FEEDBACK_TAGS,
+  DEFAULT_LOGGER_CONFIG,
+  DEFAULT_DIAGNOSTICS_OPTIONS,
 } from "./types";
 
 export type { GrokResponse } from "./agents/grok-client";

@@ -1,8 +1,10 @@
 import pino from "pino";
 import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
 import type { AgentType, CLASSicMetrics } from "./types";
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+export type LogDestination = "stdout" | "file" | "http";
 
 export interface LogContext {
   runId: string;
@@ -31,16 +33,88 @@ export interface LogEntry {
 export interface LoggerConfig {
   level: LogLevel;
   prettyPrint: boolean;
-  destination?: string;
+  destination: LogDestination;
+  filePath?: string;
+  httpEndpoint?: string;
   redactPrompts: boolean;
+  redactPatterns: RegExp[];
   stream?: NodeJS.WritableStream | { write: (chunk: string) => void };
 }
 
 const DEFAULT_CONFIG: LoggerConfig = {
   level: "info",
   prettyPrint: process.env.NODE_ENV !== "production",
+  destination: "stdout",
   redactPrompts: true,
+  redactPatterns: [/api_key/i, /password/i, /secret/i, /token/i, /authorization/i],
 };
+
+function resolveEnvConfig(): Partial<LoggerConfig> {
+  const config: Partial<LoggerConfig> = {};
+
+  const level = process.env.AI_AGENTS_LOG_LEVEL?.toLowerCase();
+  if (level && ["trace", "debug", "info", "warn", "error", "fatal"].includes(level)) {
+    config.level = level as LogLevel;
+  }
+
+  if (process.env.AI_AGENTS_DEBUG === "true") {
+    config.level = "trace";
+  }
+
+  const dest = process.env.AI_AGENTS_LOG_DEST?.toLowerCase();
+  if (dest && ["stdout", "file", "http"].includes(dest)) {
+    config.destination = dest as LogDestination;
+  }
+
+  if (process.env.AI_AGENTS_LOG_FILE) {
+    config.filePath = process.env.AI_AGENTS_LOG_FILE;
+    config.destination = "file";
+  }
+
+  if (process.env.AI_AGENTS_LOG_HTTP) {
+    config.httpEndpoint = process.env.AI_AGENTS_LOG_HTTP;
+    config.destination = "http";
+  }
+
+  if (process.env.AI_AGENTS_PRETTY === "true") {
+    config.prettyPrint = true;
+  } else if (process.env.AI_AGENTS_PRETTY === "false") {
+    config.prettyPrint = false;
+  }
+
+  if (process.env.AI_AGENTS_REDACT === "false") {
+    config.redactPrompts = false;
+  }
+
+  return config;
+}
+
+function createDestinationStream(config: LoggerConfig): NodeJS.WritableStream | undefined {
+  if (config.stream) {
+    return config.stream as NodeJS.WritableStream;
+  }
+
+  if (config.destination === "file" && config.filePath) {
+    return fs.createWriteStream(config.filePath, { flags: "a" });
+  }
+
+  if (config.destination === "http" && config.httpEndpoint) {
+    const endpoint = config.httpEndpoint;
+    return {
+      write(chunk: string) {
+        try {
+          fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: chunk,
+          }).catch(() => {});
+        } catch {}
+      },
+    } as unknown as NodeJS.WritableStream;
+  }
+
+  return undefined;
+}
 
 class Logger {
   private pino: pino.Logger;
@@ -48,14 +122,17 @@ class Logger {
   private currentRunId: string | null = null;
 
   constructor(config: Partial<LoggerConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    const envConfig = resolveEnvConfig();
+    this.config = { ...DEFAULT_CONFIG, ...envConfig, ...config };
     
-    if (this.config.stream) {
+    const stream = createDestinationStream(this.config);
+    
+    if (stream) {
       this.pino = pino({
         level: this.config.level,
         base: { service: "ai-coding-agents" },
         timestamp: pino.stdTimeFunctions.isoTime,
-      }, this.config.stream);
+      }, stream);
     } else {
       const transport = this.config.prettyPrint
         ? {
@@ -75,6 +152,10 @@ class Logger {
         timestamp: pino.stdTimeFunctions.isoTime,
       });
     }
+  }
+
+  getConfig(): LoggerConfig {
+    return { ...this.config, redactPatterns: [...this.config.redactPatterns] };
   }
 
   startRun(agentType?: AgentType): string {
@@ -231,3 +312,13 @@ export const logger = new Logger();
 export function createLogger(config?: Partial<LoggerConfig>): Logger {
   return new Logger(config);
 }
+
+export function createAgentLogger(config?: Partial<LoggerConfig>): Logger {
+  return new Logger(config);
+}
+
+export function getLoggerConfig(): LoggerConfig {
+  return logger.getConfig();
+}
+
+export { resolveEnvConfig, DEFAULT_CONFIG as DEFAULT_LOGGER_CONFIG };

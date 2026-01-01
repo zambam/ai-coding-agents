@@ -1,8 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, insertRunOutcomeSchema, insertHumanFeedbackSchema, type InsertRunOutcome } from "./storage";
 import { Orchestrator } from "./agents";
-import type { AgentType, AgentConfig, ConsistencyMode, ValidationLevel, ReasoningStep } from "@shared/schema";
+import type { AgentType, AgentConfig, ReasoningStep } from "@shared/schema";
 import { DEFAULT_AGENT_CONFIG } from "@shared/schema";
 
 export async function registerRoutes(
@@ -137,6 +137,118 @@ export async function registerRoutes(
 
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.post("/api/telemetry/outcomes", async (req: Request, res: Response) => {
+    try {
+      const parsed = insertRunOutcomeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
+      }
+      const outcome = await storage.createRunOutcome(parsed.data);
+      res.status(201).json(outcome);
+    } catch (error) {
+      console.error("Error creating run outcome:", error);
+      res.status(500).json({ error: "Failed to create run outcome" });
+    }
+  });
+
+  app.get("/api/telemetry/outcomes/:runId", async (req: Request, res: Response) => {
+    try {
+      const outcome = await storage.getRunOutcome(req.params.runId);
+      if (!outcome) {
+        return res.status(404).json({ error: "Run outcome not found" });
+      }
+      res.json(outcome);
+    } catch (error) {
+      console.error("Error fetching run outcome:", error);
+      res.status(500).json({ error: "Failed to fetch run outcome" });
+    }
+  });
+
+  app.patch("/api/telemetry/outcomes/:runId", async (req: Request, res: Response) => {
+    try {
+      const updates = req.body as Partial<InsertRunOutcome>;
+      const outcome = await storage.updateRunOutcome(req.params.runId, updates);
+      if (!outcome) {
+        return res.status(404).json({ error: "Run outcome not found" });
+      }
+      res.json(outcome);
+    } catch (error) {
+      console.error("Error updating run outcome:", error);
+      res.status(500).json({ error: "Failed to update run outcome" });
+    }
+  });
+
+  app.post("/api/telemetry/feedback", async (req: Request, res: Response) => {
+    try {
+      const parsed = insertHumanFeedbackSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
+      }
+      const feedback = await storage.createFeedback(parsed.data);
+      res.status(201).json(feedback);
+    } catch (error) {
+      console.error("Error creating feedback:", error);
+      res.status(500).json({ error: "Failed to create feedback" });
+    }
+  });
+
+  app.get("/api/telemetry/feedback/:runId", async (req: Request, res: Response) => {
+    try {
+      const feedback = await storage.getFeedbackByRunId(req.params.runId);
+      if (!feedback) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  app.get("/api/telemetry/analytics", async (req: Request, res: Response) => {
+    try {
+      const agentTypes: AgentType[] = ["architect", "mechanic", "codeNinja", "philosopher"];
+      const analytics = await Promise.all(
+        agentTypes.map(async (agentType) => ({
+          agentType,
+          acceptanceRate: await storage.getAcceptanceRate(agentType),
+        }))
+      );
+      res.json({ analytics, timestamp: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/telemetry/outcomes", async (req: Request, res: Response) => {
+    try {
+      const agentType = req.query.agentType as AgentType | undefined;
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      if (agentType) {
+        const validAgentTypes: AgentType[] = ["architect", "mechanic", "codeNinja", "philosopher"];
+        if (!validAgentTypes.includes(agentType)) {
+          return res.status(400).json({ error: "Invalid agent type" });
+        }
+        const outcomes = await storage.getRunOutcomesByAgent(agentType, limit);
+        return res.json({ outcomes, count: outcomes.length });
+      }
+      
+      const allOutcomes = await Promise.all([
+        storage.getRunOutcomesByAgent("architect", limit),
+        storage.getRunOutcomesByAgent("mechanic", limit),
+        storage.getRunOutcomesByAgent("codeNinja", limit),
+        storage.getRunOutcomesByAgent("philosopher", limit),
+      ]);
+      const outcomes = allOutcomes.flat().sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+      res.json({ outcomes, count: outcomes.length });
+    } catch (error) {
+      console.error("Error fetching outcomes:", error);
+      res.status(500).json({ error: "Failed to fetch outcomes" });
+    }
   });
 
   return httpServer;
