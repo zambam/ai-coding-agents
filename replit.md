@@ -105,6 +105,7 @@ Before any commit:
 - Created NPM package structure (src/) with TypeScript exports
 - Added QA, Security & Privacy Proposal with implementation roadmap
 - Created Combined Implementation Plan integrating Security, Self-Learning, and GitHub Logging
+- Enhanced plan with technical specs, DAG sequencing, regression gates - Mechanic & Ninja approved
 
 ## NPM Package Files
 
