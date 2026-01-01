@@ -88,6 +88,13 @@ Before any commit:
 
 ## Recent Changes
 
+- **Phase 3 In Progress: Self-Learning Infrastructure**
+  - PromptOptimizer service for A/B testing prompt variants with traffic allocation
+  - OutcomeLearner for analyzing telemetry data and generating improvement signals
+  - MemoryManager for RAG-style context retrieval using similarity search
+  - Learning components integrated into Orchestrator (invokeWithLearning, recordOutcome, getLearningInsights)
+  - 260 regression tests passing (11 test files): +20 learning tests
+
 - **Phase 2 Complete: Data Telemetry + Security Infrastructure (VERIFIED)**
   - Database schemas (RunOutcome, HumanFeedback, PromptVariant, MemoryEntry) in shared/schema.ts
   - Storage layer with IDataTelemetry interface and MemStorage CRUD operations

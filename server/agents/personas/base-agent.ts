@@ -117,6 +117,102 @@ export abstract class BaseAgent {
     };
   }
 
+  async invokeWithSystemPrompt(prompt: string, systemPromptOverride: string): Promise<AgentInvocationResult> {
+    const startTime = Date.now();
+    
+    const replitConfig = await this.replitMdParser.parse();
+    const contextAddition = this.replitMdParser.buildContextFromConfig(replitConfig);
+    
+    const fullSystemPrompt = contextAddition 
+      ? `${systemPromptOverride}\n\n--- Project Context ---\n${contextAddition}`
+      : systemPromptOverride;
+
+    const consistencyResult = await this.promptEngine.runSelfConsistency(
+      fullSystemPrompt,
+      prompt,
+      this.config.consistencyMode
+    );
+
+    let finalResponse: string;
+    let reasoning: ReasoningStep[];
+    
+    if (this.config.enableSelfCritique) {
+      const critiqueResult = await this.promptEngine.applySelfCritique(
+        JSON.stringify(consistencyResult.selectedPath),
+        fullSystemPrompt
+      );
+      finalResponse = critiqueResult.improvedResponse;
+      reasoning = consistencyResult.selectedPath.steps;
+    } else {
+      finalResponse = JSON.stringify({
+        reasoning: consistencyResult.selectedPath.steps,
+        recommendation: consistencyResult.selectedPath.conclusion,
+        confidence: consistencyResult.selectedPath.confidence,
+      });
+      reasoning = consistencyResult.selectedPath.steps;
+    }
+
+    let parsedResponse: AgentResponse;
+    try {
+      const parsed = JSON.parse(finalResponse);
+      parsedResponse = {
+        reasoning: parsed.reasoning || reasoning,
+        recommendation: parsed.recommendation || parsed.conclusion || consistencyResult.selectedPath.conclusion,
+        confidence: parsed.confidence || consistencyResult.selectedPath.confidence,
+        alternatives: parsed.alternatives || [],
+        warnings: parsed.warnings || [],
+        codeOutput: parsed.codeOutput,
+        validations: parsed.validations || { passed: [], failed: [] },
+      };
+    } catch {
+      parsedResponse = {
+        reasoning,
+        recommendation: consistencyResult.selectedPath.conclusion,
+        confidence: consistencyResult.selectedPath.confidence,
+        alternatives: [],
+        warnings: [],
+        validations: { passed: [], failed: [] },
+      };
+    }
+
+    const validation = this.evaluator.validateResponse(parsedResponse);
+    parsedResponse.validations = {
+      passed: [...parsedResponse.validations.passed, ...validation.passed],
+      failed: [...parsedResponse.validations.failed, ...validation.failed],
+    };
+
+    if (this.config.enableGrokSecondOpinion && process.env.XAI_API_KEY) {
+      try {
+        const grokResponse = await getGrokSecondOpinion(
+          fullSystemPrompt,
+          prompt,
+          parsedResponse.recommendation
+        );
+        
+        parsedResponse.grokSecondOpinion = this.parseGrokResponse(grokResponse.content, grokResponse.model);
+      } catch (error) {
+        console.error("Failed to get Grok second opinion:", error);
+      }
+    }
+
+    const inputTokens = Math.ceil(prompt.length / 4);
+    const outputTokens = Math.ceil(finalResponse.length / 4);
+
+    const metrics = this.evaluator.buildMetrics(
+      startTime,
+      inputTokens,
+      outputTokens,
+      parsedResponse,
+      consistencyResult.consensusScore,
+      consistencyResult.allPaths.length
+    );
+
+    return {
+      response: parsedResponse,
+      metrics,
+    };
+  }
+
   private parseGrokResponse(content: string, model: string): GrokSecondOpinion {
     const ratingMatch = content.match(/(\d+)\s*\/\s*10|rating[:\s]+(\d+)/i);
     const rating = ratingMatch ? parseInt(ratingMatch[1] || ratingMatch[2]) : undefined;
