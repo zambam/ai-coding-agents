@@ -46,10 +46,10 @@ import type {
 } from "@shared/schema";
 
 const agentOptions: { id: AgentType; name: string; icon: typeof Grid3X3 }[] = [
-  { id: "architect", name: "The Architect", icon: Grid3X3 },
-  { id: "mechanic", name: "The Mechanic", icon: Wrench },
-  { id: "codeNinja", name: "The Code Ninja", icon: Zap },
-  { id: "philosopher", name: "The Philosopher", icon: Brain },
+  { id: "architect", name: "Conquest", icon: Grid3X3 },
+  { id: "mechanic", name: "War", icon: Wrench },
+  { id: "codeNinja", name: "Famine", icon: Zap },
+  { id: "philosopher", name: "Death", icon: Brain },
 ];
 
 const samplePrompts: Record<AgentType, string> = {

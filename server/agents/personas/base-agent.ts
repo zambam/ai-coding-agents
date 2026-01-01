@@ -2,7 +2,7 @@ import { PromptEngine } from "../prompt-engine";
 import { Evaluator } from "../evaluator";
 import { ReplitMdParser } from "../replit-md-parser";
 import { getGrokSecondOpinion } from "../grok-client";
-import type { AgentConfig, AgentResponse, CLASSicMetrics, DEFAULT_AGENT_CONFIG, ReasoningStep, GrokSecondOpinion } from "@shared/schema";
+import type { AgentConfig, AgentResponse, CLASSicMetrics, ReasoningStep, GrokSecondOpinion } from "@shared/schema";
 import type { AgentInvocationResult } from "../types";
 
 export abstract class BaseAgent {
@@ -88,7 +88,7 @@ export abstract class BaseAgent {
     if (this.config.enableGrokSecondOpinion && process.env.XAI_API_KEY) {
       try {
         const grokResponse = await getGrokSecondOpinion(
-          this.systemPrompt,
+          fullSystemPrompt,
           prompt,
           parsedResponse.recommendation
         );
