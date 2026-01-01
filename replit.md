@@ -30,7 +30,9 @@ This project implements four specialized AI coding agents:
 │   └── schema.ts         # TypeScript types and constants
 ├── docs/
 │   ├── PROPOSAL.md       # Technical proposal document
-│   └── QA_SYSTEM_PROPOSAL.md  # QA system and review protocol
+│   ├── QA_SYSTEM_PROPOSAL.md  # QA system and review protocol
+│   ├── IMPLEMENTATION_PLAN.md # Root cause analysis and fixes
+│   └── QA_SECURITY_PRIVACY_PROPOSAL.md  # Security, privacy, logging proposal
 └── templates/
     └── replit.md.template # Reference config for consuming projects
 ```
@@ -92,3 +94,5 @@ Before any commit:
 - Created Evaluator with CLASSic metrics (Cost, Latency, Accuracy, Security, Stability)
 - Built interactive playground with progressive reasoning steps and Grok analysis display
 - Created QA System Proposal with fake/placeholder data detection requirements
+- Created NPM package structure (src/) with TypeScript exports
+- Added QA, Security & Privacy Proposal with implementation roadmap
