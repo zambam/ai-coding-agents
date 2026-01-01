@@ -99,12 +99,12 @@ export class PromptEngine {
       
       paths.push({
         steps: reasoning,
-        conclusion: parsed.recommendation || "",
+        conclusion: String(parsed.recommendation || ""),
         confidence: parsed.confidence || 0.5,
       });
     }
 
-    const conclusions = paths.map(p => p.conclusion.toLowerCase().trim());
+    const conclusions = paths.map(p => String(p.conclusion || "").toLowerCase().trim());
     const uniqueConclusions = Array.from(new Set(conclusions));
     
     const conclusionCounts = conclusions.reduce((acc, c) => {
