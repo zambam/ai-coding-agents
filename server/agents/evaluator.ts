@@ -1,6 +1,9 @@
 import type { CLASSicMetrics, ValidationLevel, AgentResponse } from "@shared/schema";
 import type { ValidationResult } from "./types";
 
+// @integrity-cited Source: OpenAI GPT-4o pricing (https://openai.com/pricing) as of 2024
+// Input: $2.50 per 1M tokens = $0.0025 per 1K tokens
+// Output: $10.00 per 1M tokens = $0.01 per 1K tokens
 const COST_PER_1K_INPUT = 0.0025;
 const COST_PER_1K_OUTPUT = 0.01;
 

@@ -239,6 +239,9 @@ export class PromptOptimizer {
     return pValue;
   }
 
+  // @integrity-cited Source: Abramowitz & Stegun, Handbook of Mathematical Functions (1964)
+  // Formula 7.1.26 - Approximation for the error function erf(x)
+  // Maximum error: |ε(x)| ≤ 1.5×10⁻⁷
   private normalCDF(x: number): number {
     const a1 = 0.254829592;
     const a2 = -0.284496736;
