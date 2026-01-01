@@ -1,15 +1,7 @@
 import { Architect, Mechanic, CodeNinja, Philosopher } from "./personas";
-import type { AgentConfig, AgentType, DEFAULT_AGENT_CONFIG } from "@shared/schema";
+import type { AgentConfig, AgentType } from "@shared/schema";
+import { DEFAULT_AGENT_CONFIG } from "@shared/schema";
 import type { AgentInvocationResult } from "./types";
-
-const DEFAULT_CONFIG: AgentConfig = {
-  consistencyMode: "fast",
-  validationLevel: "medium",
-  enableSelfCritique: true,
-  enablePhilosopher: false,
-  maxTokens: 4096,
-  temperature: 0.7,
-};
 
 export class Orchestrator {
   private config: AgentConfig;
@@ -19,7 +11,7 @@ export class Orchestrator {
   private philosopher: Philosopher;
 
   constructor(config: Partial<AgentConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
     this.architect = new Architect(this.config);
     this.mechanic = new Mechanic(this.config);
     this.codeNinja = new CodeNinja(this.config);

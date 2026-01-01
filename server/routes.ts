@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { Orchestrator } from "./agents";
 import type { AgentType, AgentConfig, ConsistencyMode, ValidationLevel, ReasoningStep } from "@shared/schema";
+import { DEFAULT_AGENT_CONFIG } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -127,17 +128,8 @@ export async function registerRoutes(
   });
 
   app.get("/api/agents/config", async (_req: Request, res: Response) => {
-    const defaultConfig: AgentConfig = {
-      consistencyMode: "fast" as ConsistencyMode,
-      validationLevel: "medium" as ValidationLevel,
-      enableSelfCritique: true,
-      enablePhilosopher: false,
-      maxTokens: 4096,
-      temperature: 0.7,
-    };
-
     res.json({
-      defaultConfig,
+      defaultConfig: DEFAULT_AGENT_CONFIG,
       consistencyModes: ["none", "fast", "robust"],
       validationLevels: ["low", "medium", "high", "strict"],
     });
