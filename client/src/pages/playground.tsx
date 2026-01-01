@@ -74,6 +74,7 @@ export default function Playground() {
   const [consistencyMode, setConsistencyMode] = useState<ConsistencyMode>("fast");
   const [validationLevel, setValidationLevel] = useState<ValidationLevel>("medium");
   const [enableSelfCritique, setEnableSelfCritique] = useState(true);
+  const [enableGrokSecondOpinion, setEnableGrokSecondOpinion] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
 
   const [response, setResponse] = useState<AgentResponse | null>(null);
@@ -108,6 +109,7 @@ export default function Playground() {
             consistencyMode,
             validationLevel,
             enableSelfCritique,
+            enableGrokSecondOpinion,
           },
         }),
       });
@@ -174,7 +176,7 @@ export default function Playground() {
       setCurrentStep(undefined);
       setProgress(100);
     }
-  }, [prompt, selectedAgent, consistencyMode, validationLevel, enableSelfCritique, isStreaming, toast]);
+  }, [prompt, selectedAgent, consistencyMode, validationLevel, enableSelfCritique, enableGrokSecondOpinion, isStreaming, toast]);
 
   const SelectedAgentIcon = agentOptions.find((a) => a.id === selectedAgent)?.icon || Grid3X3;
   const displaySteps = response?.reasoning || streamingSteps;
@@ -284,6 +286,18 @@ export default function Playground() {
                         checked={enableSelfCritique}
                         onCheckedChange={setEnableSelfCritique}
                         data-testid="switch-self-critique"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="grok-opinion">Grok Second Opinion</Label>
+                        <p className="text-xs text-muted-foreground">Dual-LLM analysis via xAI</p>
+                      </div>
+                      <Switch
+                        id="grok-opinion"
+                        checked={enableGrokSecondOpinion}
+                        onCheckedChange={setEnableGrokSecondOpinion}
+                        data-testid="switch-grok-opinion"
                       />
                     </div>
                   </CardContent>
@@ -436,6 +450,46 @@ export default function Playground() {
                                     <li key={i}>{warning}</li>
                                   ))}
                                 </ul>
+                              </div>
+                            )}
+                            {response.grokSecondOpinion && (
+                              <div className="bg-chart-3/10 border border-chart-3/20 rounded-md p-4 mt-4">
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                  <Brain className="h-4 w-4 text-chart-3" />
+                                  Grok Second Opinion
+                                  {response.grokSecondOpinion.rating && (
+                                    <Badge variant="outline" className="ml-auto">
+                                      {response.grokSecondOpinion.rating}/10
+                                    </Badge>
+                                  )}
+                                </h4>
+                                <div className="text-sm text-muted-foreground whitespace-pre-wrap mb-3">
+                                  {response.grokSecondOpinion.content}
+                                </div>
+                                {response.grokSecondOpinion.improvements.length > 0 && (
+                                  <div className="mt-3">
+                                    <span className="text-xs font-medium text-chart-2">Suggested Improvements:</span>
+                                    <ul className="text-xs text-muted-foreground mt-1 space-y-1">
+                                      {response.grokSecondOpinion.improvements.slice(0, 3).map((item, i) => (
+                                        <li key={i} className="flex items-start gap-1">
+                                          <span className="text-chart-2">+</span> {item}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {response.grokSecondOpinion.risks.length > 0 && (
+                                  <div className="mt-2">
+                                    <span className="text-xs font-medium text-destructive">Risks Identified:</span>
+                                    <ul className="text-xs text-muted-foreground mt-1 space-y-1">
+                                      {response.grokSecondOpinion.risks.slice(0, 3).map((item, i) => (
+                                        <li key={i} className="flex items-start gap-1">
+                                          <span className="text-destructive">!</span> {item}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

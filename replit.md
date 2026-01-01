@@ -1,14 +1,14 @@
-# AI Coding Agents Platform
+# The Four Horsemen - AI Coding Agents Platform
 
-An npm package providing AI-powered coding guidance agents with built-in reliability mechanisms.
+An npm package providing AI-powered coding guidance agents with built-in reliability mechanisms and dual-LLM second opinion via Grok.
 
 ## Overview
 
-This project implements four specialized AI coding agents:
-- **The Architect** - Designs robust, scalable system blueprints
-- **The Mechanic** - Diagnoses and repairs code issues
-- **The Code Ninja** - Executes fast, precise implementations
-- **The Philosopher** - Meta-evaluates decisions and identifies opportunities
+This project implements The Four Horsemen - specialized AI coding agents:
+- **Conquest** - Designs robust, scalable system blueprints
+- **War** - Diagnoses and eliminates code issues
+- **Famine** - Executes lean, efficient implementations
+- **Death** - The final arbiter that evaluates decisions and identifies opportunities
 
 ## Project Architecture
 
@@ -20,6 +20,7 @@ This project implements four specialized AI coding agents:
 ├── server/
 │   ├── agents/           # AI agent implementation
 │   │   ├── personas/     # Individual agent classes
+│   │   ├── grok-client.ts      # xAI Grok integration for second opinions
 │   │   ├── prompt-engine.ts    # CoT, self-consistency, reflection
 │   │   ├── evaluator.ts        # CLASSic metrics
 │   │   ├── replit-md-parser.ts # Config parsing
@@ -35,7 +36,7 @@ This project implements four specialized AI coding agents:
 
 - **Frontend**: React, TanStack Query, Tailwind CSS, Shadcn UI
 - **Backend**: Express, TypeScript
-- **AI**: OpenAI GPT-4o via Replit AI Integrations
+- **AI**: OpenAI GPT-4o + xAI Grok (dual-LLM)
 - **Reliability**: Chain-of-Thought, Self-Consistency, CLASSic Metrics
 
 ## Agent Configuration
@@ -44,6 +45,7 @@ consistency.mode: fast
 validationLevel: medium
 enableSelfCritique: true
 enablePhilosopher: false
+enableGrokSecondOpinion: true
 
 ## Code Standards
 
@@ -56,6 +58,7 @@ enablePhilosopher: false
 ## API Endpoints
 
 - `POST /api/agents/invoke` - Invoke a specific agent
+- `POST /api/agents/invoke/stream` - SSE streaming invocation with real-time reasoning
 - `POST /api/agents/pipeline` - Run full orchestrated pipeline
 - `GET /api/agents/config` - Get default configuration
 - `GET /api/health` - Health check
@@ -64,10 +67,16 @@ enablePhilosopher: false
 
 Run with `npm run dev`. The server starts on port 5000.
 
+## Environment Variables
+
+- `XAI_API_KEY` - xAI API key for Grok second opinions
+- `AI_INTEGRATIONS_OPENAI_API_KEY` - OpenAI API key (via Replit integration)
+
 ## Recent Changes
 
-- Implemented four agent personas with specialized system prompts
+- Rebranded to "The Four Horsemen" with Conquest, War, Famine, Death personas
+- Added Grok AI integration for uncensored dual-LLM second opinions
+- Implemented SSE streaming for real-time reasoning visualization
 - Added PromptEngine with CoT, self-consistency voting, and reflection
 - Created Evaluator with CLASSic metrics (Cost, Latency, Accuracy, Security, Stability)
-- Built interactive playground with real-time reasoning visualization
-- Added documentation page with configuration examples
+- Built interactive playground with progressive reasoning steps and Grok analysis display

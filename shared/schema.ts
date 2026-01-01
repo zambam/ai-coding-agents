@@ -60,6 +60,7 @@ export interface AgentResponse {
     passed: string[];
     failed: string[];
   };
+  grokSecondOpinion?: GrokSecondOpinion;
 }
 
 export interface CLASSicMetrics {
@@ -94,8 +95,18 @@ export interface AgentConfig {
   validationLevel: ValidationLevel;
   enableSelfCritique: boolean;
   enablePhilosopher: boolean;
+  enableGrokSecondOpinion: boolean;
   maxTokens: number;
   temperature: number;
+}
+
+export interface GrokSecondOpinion {
+  content: string;
+  model: string;
+  rating?: number;
+  agreements: string[];
+  improvements: string[];
+  risks: string[];
 }
 
 export interface ReplitMdConfig {
@@ -111,6 +122,7 @@ export const DEFAULT_AGENT_CONFIG: AgentConfig = {
   validationLevel: "medium",
   enableSelfCritique: true,
   enablePhilosopher: false,
+  enableGrokSecondOpinion: false,
   maxTokens: 4096,
   temperature: 0.7,
 };
@@ -128,9 +140,9 @@ export interface AgentPersona {
 export const AGENT_PERSONAS: AgentPersona[] = [
   {
     id: "architect",
-    name: "The Architect",
+    name: "Conquest",
     tagline: "Designs robust, scalable system blueprints",
-    description: "Creates comprehensive system designs with clear component boundaries, data flow diagrams, and architectural patterns. Evaluates trade-offs and recommends optimal structures.",
+    description: "Creates comprehensive system designs with clear component boundaries, data flow diagrams, and architectural patterns. Conquers complexity with optimal structures.",
     capabilities: [
       "System architecture design",
       "Component decomposition",
@@ -142,9 +154,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "mechanic",
-    name: "The Mechanic",
-    tagline: "Diagnoses and repairs code issues",
-    description: "Identifies root causes of bugs, performance bottlenecks, and code quality issues. Provides targeted fixes with minimal side effects.",
+    name: "War",
+    tagline: "Diagnoses and eliminates code issues",
+    description: "Wages war against bugs, performance bottlenecks, and code quality issues. Provides targeted fixes with surgical precision.",
     capabilities: [
       "Bug diagnosis",
       "Performance optimization",
@@ -156,9 +168,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "codeNinja",
-    name: "The Code Ninja",
-    tagline: "Executes fast, precise implementations",
-    description: "Writes clean, efficient code following best practices. Implements features quickly while maintaining code quality and test coverage.",
+    name: "Famine",
+    tagline: "Executes lean, efficient implementations",
+    description: "Writes clean, minimal code that starves complexity. Implements features with ruthless efficiency while maintaining quality.",
     capabilities: [
       "Feature implementation",
       "Code generation",
@@ -170,9 +182,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "philosopher",
-    name: "The Philosopher",
-    tagline: "Evaluates decisions and identifies opportunities",
-    description: "Provides meta-analysis of code and architecture decisions. Identifies cognitive biases, adjacent opportunities, and process improvements.",
+    name: "Death",
+    tagline: "The final arbiter of decisions",
+    description: "Provides meta-analysis that kills bad decisions. Identifies cognitive biases, terminal opportunities, and process improvements.",
     capabilities: [
       "Decision analysis",
       "Bias detection",

@@ -1,7 +1,8 @@
 import { PromptEngine } from "../prompt-engine";
 import { Evaluator } from "../evaluator";
 import { ReplitMdParser } from "../replit-md-parser";
-import type { AgentConfig, AgentResponse, CLASSicMetrics, DEFAULT_AGENT_CONFIG, ReasoningStep } from "@shared/schema";
+import { getGrokSecondOpinion } from "../grok-client";
+import type { AgentConfig, AgentResponse, CLASSicMetrics, DEFAULT_AGENT_CONFIG, ReasoningStep, GrokSecondOpinion } from "@shared/schema";
 import type { AgentInvocationResult } from "../types";
 
 export abstract class BaseAgent {
@@ -84,6 +85,20 @@ export abstract class BaseAgent {
       failed: [...parsedResponse.validations.failed, ...validation.failed],
     };
 
+    if (this.config.enableGrokSecondOpinion && process.env.XAI_API_KEY) {
+      try {
+        const grokResponse = await getGrokSecondOpinion(
+          this.systemPrompt,
+          prompt,
+          parsedResponse.recommendation
+        );
+        
+        parsedResponse.grokSecondOpinion = this.parseGrokResponse(grokResponse.content, grokResponse.model);
+      } catch (error) {
+        console.error("Failed to get Grok second opinion:", error);
+      }
+    }
+
     const inputTokens = Math.ceil(prompt.length / 4);
     const outputTokens = Math.ceil(finalResponse.length / 4);
 
@@ -99,6 +114,45 @@ export abstract class BaseAgent {
     return {
       response: parsedResponse,
       metrics,
+    };
+  }
+
+  private parseGrokResponse(content: string, model: string): GrokSecondOpinion {
+    const ratingMatch = content.match(/(\d+)\s*\/\s*10|rating[:\s]+(\d+)/i);
+    const rating = ratingMatch ? parseInt(ratingMatch[1] || ratingMatch[2]) : undefined;
+
+    const agreements: string[] = [];
+    const improvements: string[] = [];
+    const risks: string[] = [];
+
+    const lines = content.split('\n');
+    let currentSection = '';
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.toLowerCase().includes('agree') || trimmed.toLowerCase().includes('strength')) {
+        currentSection = 'agreements';
+      } else if (trimmed.toLowerCase().includes('improve') || trimmed.toLowerCase().includes('suggest') || trimmed.toLowerCase().includes('alternative')) {
+        currentSection = 'improvements';
+      } else if (trimmed.toLowerCase().includes('risk') || trimmed.toLowerCase().includes('miss') || trimmed.toLowerCase().includes('concern')) {
+        currentSection = 'risks';
+      } else if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
+        const item = trimmed.replace(/^[-*\d.]\s*/, '');
+        if (item.length > 10) {
+          if (currentSection === 'agreements') agreements.push(item);
+          else if (currentSection === 'improvements') improvements.push(item);
+          else if (currentSection === 'risks') risks.push(item);
+        }
+      }
+    }
+
+    return {
+      content,
+      model,
+      rating,
+      agreements,
+      improvements,
+      risks,
     };
   }
 }

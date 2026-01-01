@@ -16,25 +16,26 @@ import {
 } from "lucide-react";
 import { AGENT_PERSONAS } from "@shared/schema";
 
-const usageExample = `import { Architect, CodeNinja, Mechanic } from 'ai-coding-agents';
+const usageExample = `import { Conquest, Famine, War } from 'four-horsemen-agents';
 
-// Configure agents via your replit.md
-const architect = new Architect({
-  consistencyMode: 'fast',    // none | fast | robust
-  validationLevel: 'medium',  // low | medium | high | strict
+// Configure your agents via replit.md
+const conquest = new Conquest({
+  consistencyMode: 'fast',        // none | fast | robust
+  validationLevel: 'medium',      // low | medium | high | strict
+  enableGrokSecondOpinion: true,  // dual-LLM second opinion
 });
 
 // Design your system architecture
-const blueprint = await architect.design({
+const blueprint = await conquest.design({
   task: "Build a real-time chat application",
   constraints: ["TypeScript", "WebSocket", "PostgreSQL"],
 });
 
-// Implement with the Code Ninja
-const code = await codeNinja.implement(blueprint);
+// Implement with Famine (lean, efficient code)
+const code = await famine.implement(blueprint);
 
-// Debug issues with the Mechanic
-const fixes = await mechanic.diagnose(code, {
+// Debug issues with War
+const fixes = await war.diagnose(code, {
   errorLog: "Connection refused on port 5432"
 });`;
 
@@ -92,12 +93,12 @@ export default function Home() {
             v1.0 Preview
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6" data-testid="text-hero-title">
-            AI Coding Agents with{" "}
-            <span className="text-chart-1">Built-in Reliability</span>
+            <span className="text-chart-1">The Four Horsemen</span>{" "}
+            of AI Coding
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto" data-testid="text-hero-description">
-            Four specialized agents for architecture, implementation, debugging, and meta-evaluation.
-            Powered by 2025 best practices for QA and logical consistency.
+            Conquest designs. Famine implements. War debugs. Death evaluates.
+            Dual-LLM reasoning with Grok for uncensored second opinions.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/playground">
@@ -135,11 +136,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-semibold mb-4" data-testid="text-agents-title">
-              Four Specialized Personas
+              Meet The Four Horsemen
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Each agent is optimized for a specific aspect of the development lifecycle,
-              working together through an orchestrated pipeline.
+              Each horseman commands a specific aspect of the development lifecycle,
+              riding together through an orchestrated apocalypse of productivity.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
