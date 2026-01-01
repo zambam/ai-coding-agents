@@ -1,14 +1,14 @@
-# The Four Horsemen - AI Coding Agents Platform
+# AI Coding Agents Platform
 
 An npm package providing AI-powered coding guidance agents with built-in reliability mechanisms and dual-LLM second opinion via Grok.
 
 ## Overview
 
-This project implements The Four Horsemen - specialized AI coding agents:
-- **Conquest** - Designs robust, scalable system blueprints
-- **War** - Diagnoses and eliminates code issues
-- **Famine** - Executes lean, efficient implementations
-- **Death** - The final arbiter that evaluates decisions and identifies opportunities
+This project implements four specialized AI coding agents:
+- **The Architect** - Designs robust, scalable system blueprints
+- **The Mechanic** - Diagnoses and repairs code issues
+- **The Code Ninja** - Executes fast, precise implementations
+- **The Philosopher** - Evaluates decisions and identifies opportunities
 
 ## Project Architecture
 
@@ -28,6 +28,9 @@ This project implements The Four Horsemen - specialized AI coding agents:
 │   └── routes.ts         # API endpoints
 ├── shared/
 │   └── schema.ts         # TypeScript types and constants
+├── docs/
+│   ├── PROPOSAL.md       # Technical proposal document
+│   └── QA_SYSTEM_PROPOSAL.md  # QA system and review protocol
 └── templates/
     └── replit.md.template # Reference config for consuming projects
 ```
@@ -54,6 +57,7 @@ enableGrokSecondOpinion: true
 - Functional components with hooks
 - TanStack Query for data fetching
 - Follow design_guidelines.md for UI
+- No fake/placeholder data in production paths
 
 ## API Endpoints
 
@@ -72,11 +76,19 @@ Run with `npm run dev`. The server starts on port 5000.
 - `XAI_API_KEY` - xAI API key for Grok second opinions
 - `AI_INTEGRATIONS_OPENAI_API_KEY` - OpenAI API key (via Replit integration)
 
+## QA Requirements
+
+Before any commit:
+1. Run `npm run check` to verify TypeScript compiles
+2. Scan for fake/placeholder data patterns
+3. Verify all icon imports are consistent
+4. Test UI loads without console errors
+
 ## Recent Changes
 
-- Rebranded to "The Four Horsemen" with Conquest, War, Famine, Death personas
-- Added Grok AI integration for uncensored dual-LLM second opinions
+- Added Grok AI integration for dual-LLM second opinions
 - Implemented SSE streaming for real-time reasoning visualization
 - Added PromptEngine with CoT, self-consistency voting, and reflection
 - Created Evaluator with CLASSic metrics (Cost, Latency, Accuracy, Security, Stability)
 - Built interactive playground with progressive reasoning steps and Grok analysis display
+- Created QA System Proposal with fake/placeholder data detection requirements

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, X, Github, Skull } from "lucide-react";
+import { Menu, X, Github, Zap } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -36,9 +36,9 @@ export function Navbar() {
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
               <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                <Skull className="w-5 h-5 text-primary-foreground" />
+                <Zap className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-lg">The Four Horsemen</span>
+              <span className="font-semibold text-lg">AI Agents</span>
             </div>
           </Link>
 

@@ -140,9 +140,9 @@ export interface AgentPersona {
 export const AGENT_PERSONAS: AgentPersona[] = [
   {
     id: "architect",
-    name: "Conquest",
+    name: "The Architect",
     tagline: "Designs robust, scalable system blueprints",
-    description: "Creates comprehensive system designs with clear component boundaries, data flow diagrams, and architectural patterns. Conquers complexity with optimal structures.",
+    description: "Creates comprehensive system designs with clear component boundaries, data flow diagrams, and architectural patterns. Evaluates trade-offs and recommends optimal structures.",
     capabilities: [
       "System architecture design",
       "Component decomposition",
@@ -154,9 +154,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "mechanic",
-    name: "War",
-    tagline: "Diagnoses and eliminates code issues",
-    description: "Wages war against bugs, performance bottlenecks, and code quality issues. Provides targeted fixes with surgical precision.",
+    name: "The Mechanic",
+    tagline: "Diagnoses and repairs code issues",
+    description: "Identifies root causes of bugs, performance bottlenecks, and code quality issues. Provides targeted fixes with minimal side effects.",
     capabilities: [
       "Bug diagnosis",
       "Performance optimization",
@@ -168,9 +168,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "codeNinja",
-    name: "Famine",
-    tagline: "Executes lean, efficient implementations",
-    description: "Writes clean, minimal code that starves complexity. Implements features with ruthless efficiency while maintaining quality.",
+    name: "The Code Ninja",
+    tagline: "Executes fast, precise implementations",
+    description: "Writes clean, efficient code following best practices. Implements features quickly while maintaining code quality and test coverage.",
     capabilities: [
       "Feature implementation",
       "Code generation",
@@ -182,9 +182,9 @@ export const AGENT_PERSONAS: AgentPersona[] = [
   },
   {
     id: "philosopher",
-    name: "Death",
-    tagline: "The final arbiter of decisions",
-    description: "Provides meta-analysis that kills bad decisions. Identifies cognitive biases, terminal opportunities, and process improvements.",
+    name: "The Philosopher",
+    tagline: "Evaluates decisions and identifies opportunities",
+    description: "Provides meta-analysis of code and architecture decisions. Identifies cognitive biases, adjacent opportunities, and process improvements.",
     capabilities: [
       "Decision analysis",
       "Bias detection",

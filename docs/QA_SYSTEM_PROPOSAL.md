@@ -39,9 +39,39 @@ Before ANY code change, the developer/agent must:
 - [ ] Document the change intent in the commit message
 - [ ] If changing types: grep for all usages across codebase
 - [ ] If changing imports: verify all icon/component references
+- [ ] Scan for fake/placeholder data and ensure it's marked as such
 ```
 
-### 2.2 Post-Change Validation Pipeline
+### 2.2 Fake/Placeholder Data Detection (CRITICAL)
+
+AI agents often generate placeholder data to "pump out" results quickly. This is deceptive and must be caught.
+
+**Detection Rules:**
+1. **No unmarked mock data** - All test/placeholder data MUST be clearly labeled
+2. **No fake API responses** - Simulated responses must throw errors or be flagged
+3. **No Lorem Ipsum in production** - Placeholder text must be replaced with real content
+4. **No hardcoded sample values** - IDs, emails, names must come from real sources
+
+**Patterns to Grep For:**
+```bash
+# Detect common placeholder patterns
+grep -r "lorem ipsum" --include="*.ts" --include="*.tsx"
+grep -r "example\.com" --include="*.ts" --include="*.tsx"
+grep -r "test@" --include="*.ts" --include="*.tsx"
+grep -r "TODO:" --include="*.ts" --include="*.tsx"
+grep -r "FIXME:" --include="*.ts" --include="*.tsx"
+grep -r "placeholder" --include="*.ts" --include="*.tsx"
+grep -r "mock" --include="*.ts" --include="*.tsx"
+grep -r "fake" --include="*.ts" --include="*.tsx"
+grep -r "sample" --include="*.ts" --include="*.tsx"
+```
+
+**Validation Criteria:**
+- If placeholder data exists, it MUST be in a clearly marked `/mocks/` or `/fixtures/` directory
+- Production code paths MUST NOT reference mock data
+- All sample data must have a comment explaining it's a sample
+
+### 2.3 Post-Change Validation Pipeline
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -54,7 +84,7 @@ Before ANY code change, the developer/agent must:
    + Impact          + Root Cause       + Tests           + Sign-off
 ```
 
-### 2.3 Documentation Requirements
+### 2.4 Documentation Requirements
 
 Every significant change must include:
 
@@ -66,9 +96,9 @@ Every significant change must include:
 
 ---
 
-## Part 3: Four Horsemen Self-Review Protocol
+## Part 3: Agent Self-Review Protocol
 
-### Step 1: Conquest Reviews Architecture
+### Step 1: The Architect Reviews Architecture
 
 **Command**: 
 ```bash
@@ -82,7 +112,7 @@ POST /api/agents/invoke
 
 **Output**: Architecture audit with dependency map
 
-### Step 2: War Diagnoses Issues
+### Step 2: The Mechanic Diagnoses Issues
 
 **Command**:
 ```bash
@@ -96,7 +126,7 @@ POST /api/agents/invoke
 
 **Output**: Issue inventory with root causes
 
-### Step 3: Famine Implements Fixes
+### Step 3: The Code Ninja Implements Fixes
 
 **Command**:
 ```bash
@@ -110,7 +140,7 @@ POST /api/agents/invoke
 
 **Output**: Implementation with complete diffs
 
-### Step 4: Death Validates Everything
+### Step 4: The Philosopher Validates Everything
 
 **Command**:
 ```bash
@@ -132,27 +162,30 @@ POST /api/agents/invoke
 
 | Task | Owner | Validation |
 |------|-------|------------|
-| Add `enableGrokSecondOpinion` to all config locations | Famine | `npm run typecheck` passes |
-| Audit all lucide-react imports for consistency | War | No "undefined" errors in console |
-| Pass `fullSystemPrompt` to Grok client | Famine | Grok responses include project context |
-| Remove duplicate `DEFAULT_CONFIG` definitions | Famine | Single source of truth verified |
+| Add `enableGrokSecondOpinion` to all config locations | Code Ninja | `npm run typecheck` passes |
+| Audit all lucide-react imports for consistency | Mechanic | No "undefined" errors in console |
+| Pass `fullSystemPrompt` to Grok client | Code Ninja | Grok responses include project context |
+| Remove duplicate `DEFAULT_CONFIG` definitions | Code Ninja | Single source of truth verified |
+| **Scan for fake/placeholder data** | Mechanic | No unmarked mock data in production paths |
 
 ### Phase 2: Add QA Infrastructure (This Week)
 
 | Task | Owner | Validation |
 |------|-------|------------|
-| Add `npm run typecheck` script | Famine | Script runs without errors |
-| Add pre-commit hook for type checking | Famine | Commits blocked if types fail |
-| Create dependency map documentation | Conquest | All module relationships documented |
-| Add integration test for UI mount | War | Test catches missing imports |
+| Add `npm run typecheck` script | Code Ninja | Script runs without errors |
+| Add pre-commit hook for type checking | Code Ninja | Commits blocked if types fail |
+| Create dependency map documentation | Architect | All module relationships documented |
+| Add integration test for UI mount | Mechanic | Test catches missing imports |
+| **Add fake data scanner script** | Mechanic | Script detects unmarked placeholders |
 
 ### Phase 3: Establish Ongoing QA (Next Sprint)
 
 | Task | Owner | Validation |
 |------|-------|------------|
-| Implement automated Four Horsemen review pipeline | Conquest | Pipeline runs on every PR |
-| Add CLASSic metrics dashboard | Famine | Real-time quality visibility |
-| Create runbook for common issues | Death | Team can self-serve fixes |
+| Implement automated agent review pipeline | Architect | Pipeline runs on every PR |
+| Add CLASSic metrics dashboard | Code Ninja | Real-time quality visibility |
+| Create runbook for common issues | Philosopher | Team can self-serve fixes |
+| **Integrate fake data scan into CI** | Mechanic | PRs blocked if fake data detected |
 
 ---
 
@@ -165,7 +198,8 @@ The QA system is successful when:
 3. **Single source of truth** - No duplicate constants or configs
 4. **Full context in Grok** - Second opinions reference project specifics
 5. **Documented changes** - Every PR has impact analysis
-6. **Automated validation** - Four Horsemen pipeline runs on changes
+6. **Automated validation** - Agent pipeline runs on changes
+7. **No fake/placeholder data** - All mock data is clearly marked and isolated
 
 ---
 
@@ -183,13 +217,22 @@ grep -r "DEFAULT.*CONFIG" server/ shared/
 grep -r "from \"lucide-react\"" client/src/
 ```
 
-### Full Four Horsemen Review
+### Fake/Placeholder Data Scan
+```bash
+# Scan for common placeholder patterns
+echo "=== Scanning for fake/placeholder data ==="
+grep -rn "lorem ipsum\|example\.com\|test@\|TODO:\|FIXME:\|placeholder\|MOCK\|FAKE" \
+  --include="*.ts" --include="*.tsx" \
+  client/ server/ shared/ || echo "No placeholder data found"
+```
+
+### Full Agent Review Pipeline
 ```bash
 # Run the complete pipeline
 curl -X POST http://localhost:5000/api/agents/pipeline \
   -H "Content-Type: application/json" \
   -d '{
-    "task": "Perform a complete self-audit of The Four Horsemen codebase. Identify all issues, propose fixes, and validate the system is production-ready.",
+    "task": "Perform a complete self-audit of the AI Agents codebase. Identify all issues including fake/placeholder data, propose fixes, and validate the system is production-ready.",
     "config": {
       "validationLevel": "strict",
       "enablePhilosopher": true,
