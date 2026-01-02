@@ -413,5 +413,74 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/chat/history", async (_req: Request, res: Response) => {
+    try {
+      const { getChatPersistence } = await import("./agents/learning/chat-persistence");
+      const chatService = getChatPersistence();
+      
+      if (!chatService) {
+        return res.status(503).json({ error: "Chat persistence not initialized" });
+      }
+      
+      const stats = chatService.getStats();
+      const entries = chatService.getRecentEntries(100);
+      
+      res.json({
+        status: "active",
+        stats,
+        entriesCount: entries.length,
+        entries: entries.map(e => ({
+          id: e.id,
+          timestamp: e.timestamp,
+          type: e.type,
+          role: e.role,
+          contentPreview: e.content.slice(0, 200),
+          metadata: e.metadata,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+  });
+
+  app.post("/api/chat/record", async (req: Request, res: Response) => {
+    try {
+      const { getChatPersistence } = await import("./agents/learning/chat-persistence");
+      const chatService = getChatPersistence();
+      
+      if (!chatService) {
+        return res.status(503).json({ error: "Chat persistence not initialized" });
+      }
+      
+      const { role, content, type, toolName, errorCode } = req.body as {
+        role: "user" | "assistant";
+        content: string;
+        type?: string;
+        toolName?: string;
+        errorCode?: string;
+      };
+      
+      if (!content) {
+        return res.status(400).json({ error: "content is required" });
+      }
+      
+      if (type === "tool" && toolName) {
+        chatService.recordToolCall(toolName, true);
+      } else if (type === "error" && errorCode) {
+        chatService.recordError(errorCode, content);
+      } else if (role === "user") {
+        chatService.recordUserMessage(content);
+      } else {
+        chatService.recordAssistantMessage(content);
+      }
+      
+      res.json({ success: true, stats: chatService.getStats() });
+    } catch (error) {
+      console.error("Error recording chat:", error);
+      res.status(500).json({ error: "Failed to record chat" });
+    }
+  });
+
   return httpServer;
 }

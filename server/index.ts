@@ -4,8 +4,16 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { initializeGlobalObserver } from "./agents/learning/observer-config";
+import { initializeChatPersistence } from "./agents/learning/chat-persistence";
 
 const app = express();
+
+const chatPersistence = initializeChatPersistence({
+  saveIntervalMs: 5000,
+  chatFilePath: "/tmp/ml-chat-history.json",
+  maxEntriesInFile: 500,
+  enabled: true,
+});
 
 const observer = initializeGlobalObserver(storage, {
   observeReplitAgent: true,
@@ -13,6 +21,10 @@ const observer = initializeGlobalObserver(storage, {
   observeMechanic: true,
   observeNinja: true,
   observePhilosopher: true,
+  observeConversations: true,
+  observeToolExecutions: true,
+  observeFileOperations: true,
+  observeErrors: true,
   loadChatHistory: true,
   loadLogs: true,
   loadDocs: true,
@@ -25,6 +37,8 @@ observer.initialize().then(() => {
 }).catch(err => {
   console.error("[ML Observer] Failed to initialize:", err);
 });
+
+console.log("[ChatPersistence] Service started - saving to /tmp/ml-chat-history.json every 5s");
 const httpServer = createServer(app);
 
 declare module "http" {
