@@ -1,0 +1,156 @@
+import { PromptEngine } from "../prompt-engine";
+import { Evaluator } from "../evaluator";
+import { ReplitMdParser } from "../replit-md-parser";
+import { getGrokSecondOpinion } from "../grok-client";
+import { logger } from "../../logger";
+import { hashPrompt } from "../../errors";
+import { enforceValidation, enforceClassicThresholds } from "../../validation";
+export class BaseAgent {
+    constructor(config, openaiApiKey) {
+        this.config = config;
+        this.promptEngine = new PromptEngine(config, openaiApiKey);
+        this.evaluator = new Evaluator(config.validationLevel);
+        this.replitMdParser = new ReplitMdParser();
+    }
+    async invoke(prompt) {
+        const startTime = Date.now();
+        const runId = logger.startRun(this.agentType);
+        const promptHash = hashPrompt(prompt);
+        let metrics;
+        try {
+            logger.debug("Agent invocation started", {
+                agent: this.name,
+                promptHash,
+                config: {
+                    validationLevel: this.config.validationLevel,
+                    enableSelfCritique: this.config.enableSelfCritique,
+                    enableGrokSecondOpinion: this.config.enableGrokSecondOpinion,
+                }
+            }, { runId, agentType: this.agentType, action: "invoke" });
+            const replitConfig = await this.replitMdParser.parse();
+            const contextAddition = this.replitMdParser.buildContextFromConfig(replitConfig);
+            const fullSystemPrompt = contextAddition
+                ? `${this.systemPrompt}\n\n--- Project Context ---\n${contextAddition}`
+                : this.systemPrompt;
+            const consistencyResult = await this.promptEngine.runSelfConsistency(fullSystemPrompt, prompt, this.config.consistencyMode);
+            let finalResponse;
+            let reasoning;
+            if (this.config.enableSelfCritique) {
+                const critiqueResult = await this.promptEngine.applySelfCritique(JSON.stringify(consistencyResult.selectedPath), fullSystemPrompt);
+                finalResponse = critiqueResult.improvedResponse;
+                reasoning = consistencyResult.selectedPath.steps;
+            }
+            else {
+                finalResponse = JSON.stringify({
+                    reasoning: consistencyResult.selectedPath.steps,
+                    recommendation: consistencyResult.selectedPath.conclusion,
+                    confidence: consistencyResult.selectedPath.confidence,
+                });
+                reasoning = consistencyResult.selectedPath.steps;
+            }
+            let parsedResponse;
+            try {
+                const parsed = JSON.parse(finalResponse);
+                parsedResponse = {
+                    reasoning: parsed.reasoning || reasoning,
+                    recommendation: parsed.recommendation || parsed.conclusion || consistencyResult.selectedPath.conclusion,
+                    confidence: parsed.confidence || consistencyResult.selectedPath.confidence,
+                    alternatives: parsed.alternatives || [],
+                    warnings: parsed.warnings || [],
+                    codeOutput: parsed.codeOutput,
+                    validations: parsed.validations || { passed: [], failed: [] },
+                };
+            }
+            catch {
+                parsedResponse = {
+                    reasoning,
+                    recommendation: consistencyResult.selectedPath.conclusion,
+                    confidence: consistencyResult.selectedPath.confidence,
+                    alternatives: [],
+                    warnings: [],
+                    validations: { passed: [], failed: [] },
+                };
+            }
+            const validation = this.evaluator.validateResponse(parsedResponse);
+            parsedResponse.validations = {
+                passed: [...parsedResponse.validations.passed, ...validation.passed],
+                failed: [...parsedResponse.validations.failed, ...validation.failed],
+            };
+            if (this.config.enableGrokSecondOpinion && process.env.XAI_API_KEY) {
+                try {
+                    logger.debug("Requesting Grok second opinion", {}, { runId, agentType: this.agentType });
+                    const grokResponse = await getGrokSecondOpinion(fullSystemPrompt, prompt, parsedResponse.recommendation);
+                    parsedResponse.grokSecondOpinion = this.parseGrokResponse(grokResponse.content, grokResponse.model);
+                    logger.info("Grok second opinion received", {
+                        model: grokResponse.model,
+                        rating: parsedResponse.grokSecondOpinion.rating
+                    }, { runId, agentType: this.agentType });
+                }
+                catch (error) {
+                    logger.error("Failed to get Grok second opinion", error, { runId, agentType: this.agentType });
+                }
+            }
+            const inputTokens = Math.ceil(prompt.length / 4);
+            const outputTokens = Math.ceil(finalResponse.length / 4);
+            metrics = this.evaluator.buildMetrics(startTime, inputTokens, outputTokens, parsedResponse, consistencyResult.consensusScore, consistencyResult.allPaths.length);
+            const errorContext = { runId, agentType: this.agentType, promptHash };
+            enforceValidation(parsedResponse, this.config, {}, errorContext);
+            enforceClassicThresholds(this.agentType, metrics, errorContext);
+            logger.logAgentInvocation(this.agentType, "invoke", "success", metrics, promptHash);
+            logger.endRun("success", metrics);
+            return {
+                response: parsedResponse,
+                metrics,
+            };
+        }
+        catch (error) {
+            logger.error("Agent invocation failed", error, { runId, agentType: this.agentType });
+            if (metrics) {
+                logger.logAgentInvocation(this.agentType, "invoke", "failure", metrics, promptHash);
+            }
+            logger.endRun("failure", metrics);
+            throw error;
+        }
+    }
+    parseGrokResponse(content, model) {
+        const ratingMatch = content.match(/(\d+)\s*\/\s*10|rating[:\s]+(\d+)/i);
+        const rating = ratingMatch ? parseInt(ratingMatch[1] || ratingMatch[2]) : undefined;
+        const agreements = [];
+        const improvements = [];
+        const risks = [];
+        const lines = content.split('\n');
+        let currentSection = '';
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.toLowerCase().includes('agree') || trimmed.toLowerCase().includes('strength')) {
+                currentSection = 'agreements';
+            }
+            else if (trimmed.toLowerCase().includes('improve') || trimmed.toLowerCase().includes('suggest') || trimmed.toLowerCase().includes('alternative')) {
+                currentSection = 'improvements';
+            }
+            else if (trimmed.toLowerCase().includes('risk') || trimmed.toLowerCase().includes('miss') || trimmed.toLowerCase().includes('concern')) {
+                currentSection = 'risks';
+            }
+            else if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
+                const item = trimmed.replace(/^[-*\d.]\s*/, '');
+                if (item.length > 10) {
+                    if (currentSection === 'agreements')
+                        agreements.push(item);
+                    else if (currentSection === 'improvements')
+                        improvements.push(item);
+                    else if (currentSection === 'risks')
+                        risks.push(item);
+                }
+            }
+        }
+        return {
+            content,
+            model,
+            rating,
+            agreements,
+            improvements,
+            risks,
+        };
+    }
+}
+//# sourceMappingURL=base-agent.js.map
