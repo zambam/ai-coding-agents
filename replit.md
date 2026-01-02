@@ -98,6 +98,7 @@ Before any commit:
   - ML integration with OutcomeLearner, MemoryManager, PromptOptimizer extensions
   - DAG implementation sequence with 5 phases and regression gates
   - Documents: docs/AI_AGENT_MONITOR_PROPOSAL.md, docs/AI_AGENT_MONITOR_IMPLEMENTATION_PLAN.md (pending review)
+  - **Configuration Finalized**: No API auth, 60-day retention, opt-in cross-project learning, 5-min debounce, 3+ failure threshold
 
 - **GitHub Integration Added**
   - PR review: Analyze pull requests with Architect, Mechanic, and Code Ninja agents

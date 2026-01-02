@@ -363,13 +363,19 @@ export interface ProcessorConfig {
   autoUpdateGuidelines: boolean;
   criticalAlertThreshold: number;  // Number of critical failures before alert
   guidelinesUpdateInterval: number; // Seconds between guideline updates
+  ruleCreationThreshold: number;    // Failures before rule is created
+  retentionDays: number;            // Days to retain reports
+  crossProjectLearning: boolean;    // Enable cross-project pattern sharing
 }
 
 const DEFAULT_PROCESSOR_CONFIG: ProcessorConfig = {
   autoDetectFailures: true,
   autoUpdateGuidelines: true,
-  criticalAlertThreshold: 5,
-  guidelinesUpdateInterval: 300, // 5 minutes
+  criticalAlertThreshold: 3,        // Alert after 3 critical failures
+  guidelinesUpdateInterval: 300,    // 5 minutes debounce
+  ruleCreationThreshold: 3,         // 3+ failures to create rule
+  retentionDays: 60,                // 60-day retention
+  crossProjectLearning: false,      // Opt-in only
 };
 
 export class ReportProcessor {
@@ -839,6 +845,7 @@ export interface GeneratorConfig {
   maxRulesPerCategory: number;
   includeExamples: boolean;
   includeMetrics: boolean;
+  ruleCreationThreshold: number;  // Min failures before rule is created
 }
 
 const DEFAULT_GENERATOR_CONFIG: GeneratorConfig = {
@@ -847,6 +854,7 @@ const DEFAULT_GENERATOR_CONFIG: GeneratorConfig = {
   maxRulesPerCategory: 5,
   includeExamples: true,
   includeMetrics: true,
+  ruleCreationThreshold: 3,       // 3+ failures to create rule
 };
 
 export interface GeneratedRule {
@@ -2077,19 +2085,48 @@ Before each commit:
 
 ---
 
-## Part 14: Open Questions
+## Part 14: Configuration Decisions (RESOLVED)
 
-1. **API Authentication**: Should the `/api/agents/external/report` endpoint require API key authentication in production? Currently disabled for development.
+| Question | Decision | Notes |
+|----------|----------|-------|
+| API Authentication | **Disabled** | No API key required for `/api/agents/external/report` |
+| Data Retention | **60 days** | Reports auto-cleaned after 60 days |
+| Cross-Project Learning | **Opt-in** | Projects must explicitly enable cross-project pattern sharing |
+| Guidelines Auto-Update | **5-min debounce** | Approved as proposed |
+| Rule Creation Threshold | **3+ failures** | Rules created when failure category occurs 3+ times |
 
-2. **Data Retention**: How long should we retain agent reports? Proposal suggests configurable (7, 30, 365 days) but need to confirm default.
+### 14.1 Default Configuration Constants
 
-3. **Cross-Project Consent**: Should cross-project pattern learning be opt-in or opt-out by default?
+```typescript
+// src/monitor/config.ts
 
-4. **Guidelines Auto-Update**: Should guidelines regenerate automatically on each report, or on a fixed schedule? Current proposal uses debounced updates (5 min delay).
+export const MONITOR_CONFIG = {
+  // API Security
+  apiAuthEnabled: false,
+  
+  // Data Retention
+  retentionDays: 60,
+  
+  // Cross-Project Learning
+  crossProjectLearningEnabled: false,  // Opt-in per project
+  
+  // Guidelines Generation
+  guidelinesUpdateDebounceMs: 300000,  // 5 minutes
+  minObservationsForGuidelines: 10,
+  
+  // Rule Creation
+  ruleCreationThreshold: 3,  // 3+ failures to create rule
+  
+  // Rate Limiting
+  maxReportsPerMinute: 60,
+  maxReportsPerHour: 500,
+} as const;
 
-5. **Severity Thresholds**: What failure rate should trigger automatic rule creation? Current proposal uses 5+ occurrences.
+export type MonitorConfig = typeof MONITOR_CONFIG;
+```
 
 ---
 
 *Document follows 3-Pass Optimized Workflow from @ai-coding-agents/cli v2.1*  
-*Implementation Plan generated: January 2, 2026*
+*Implementation Plan generated: January 2, 2026*  
+*Configuration finalized: January 2, 2026*
