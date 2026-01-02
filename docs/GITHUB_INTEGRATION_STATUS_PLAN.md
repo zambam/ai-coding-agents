@@ -1,17 +1,53 @@
 # AI Agent Monitor - GitHub Integration & ML Reporting Status
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** January 2, 2026  
 **Status:** AWAITING REVIEW  
-**Purpose:** Document all services, APIs, hooks and their integration status for external project reporting
+**Purpose:** Document how client projects receive software and report back to this central ML hub
 
 ---
 
 ## Executive Summary
 
-This document details how the AI Agent Monitor system will be deployed to external GitHub projects and how those projects will report back to the central ML learning hub.
+This document details the **bidirectional integration** between:
 
-**Current State:** Core infrastructure complete (Phases 1-5). Missing: Client SDKs, webhook handlers, GitHub App, and client-side integration hooks.
+1. **This Project (Central ML Hub)** → Publishes NPM package to GitHub/NPM
+2. **Client Projects** → Install package, use AI agents, report outcomes back to this hub
+
+**Data Flow Direction:**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    THIS PROJECT (Central ML Hub)                             │
+│                    ai-coding-agents on Replit                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   1. PUBLISH ──────────────────────▶  NPM / GitHub Package Registry         │
+│      (@ai-coding-agents/cli)                                                 │
+│                                                                              │
+│   4. RECEIVE ◀────────────────────── ML Reports from client projects        │
+│      (Store in agentReports,         (failures, corrections, patterns)      │
+│       learn patterns, generate                                               │
+│       cross-project insights)                                                │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                        │                              ▲
+                        │ npm install                  │ HTTP POST reports
+                        ▼                              │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    CLIENT PROJECTS (on GitHub)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   2. INSTALL ◀─────────────────────  npm install @ai-coding-agents/cli      │
+│                                                                              │
+│   3. REPORT  ──────────────────────▶ Send ML data back to central hub       │
+│      (When AI agents generate code,  POST /api/agents/external/report       │
+│       user accepts/rejects,                                                  │
+│       errors occur)                                                          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Current State:** Central hub infrastructure complete (Phases 1-5). Missing: Client-side reporting SDK, automatic callback hooks, configuration for hub URL.
 
 ---
 
