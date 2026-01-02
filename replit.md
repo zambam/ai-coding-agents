@@ -88,6 +88,15 @@ Before any commit:
 
 ## Recent Changes
 
+- **Agent Behavior Optimization Proposal v2.1 APPROVED**
+  - 3-Pass Optimized Workflow with 8 AI calls (down from 10+)
+  - Pass 1: Foundation (Philosopher → Architect → Mechanic) - 3 calls
+  - Pass 2: Refinement (Architect → Mechanic + 15% trigger Philosopher) - 2 calls
+  - Pass 3: Final (Architect → Joint Validation → Code Ninja) - 3 calls
+  - Auto-merge simple conflicts, escalate contradictions to Philosopher
+  - Adjacent opportunities stored in ML system + documented in output
+  - Document: docs/AGENT_BEHAVIOR_OPTIMIZATION_PROPOSAL.md
+
 - **Cross-Project Observer Configured**
   - ProjectObserver class for tracking Replit agent and Architect interactions
   - Auto-loads chat history, logs, and docs for context awareness
