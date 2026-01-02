@@ -2,6 +2,8 @@
 
 AI-powered coding guidance agents with built-in reliability mechanisms, dual-LLM reasoning (OpenAI + xAI Grok), and enterprise-grade ML learning.
 
+> **New to integration?** See [QUICKSTART.md](../docs/QUICKSTART.md) for 5-minute setup.
+
 ## Features
 
 - **4 Specialized AI Agents**: Architect, Mechanic, Code Ninja, Philosopher
