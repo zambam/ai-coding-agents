@@ -1,7 +1,7 @@
 # NPM Client Setup Implementation Plan
 
-**Generated**: Based on actual code analysis + client feedback  
-**Methodology**: Architect design + Mechanic verification  
+**Generated**: Based on actual code analysis + client feedback + Grok review  
+**Methodology**: Architect design + Mechanic verification + Grok enhancements  
 **Scope**: Prepare NPM package for client installation
 
 ---
@@ -10,46 +10,53 @@
 
 ### Package Exports (Verified in src/index.ts)
 
-| Export | Path | Status |
-|--------|------|--------|
-| `createAgentRouter` | `ai-coding-agents/express` | EXISTS |
-| `IAgentStorage` | `ai-coding-agents/express` | EXISTS |
-| `detectFailure`, `categorizeFailure` | `ai-coding-agents/express` | EXISTS |
-| `agentReportsTable` | `ai-coding-agents/drizzle` | EXISTS |
-| `agentLogsTable` | `ai-coding-agents/drizzle` | EXISTS |
-| `projectGuidelinesTable` | `ai-coding-agents/drizzle` | EXISTS |
-| `failurePatternsTable` | `ai-coding-agents/drizzle` | EXISTS |
-| `initProject` | `ai-coding-agents` | EXISTS |
-| `generateStorageScaffold` | `ai-coding-agents` | EXISTS |
-| `createMonitorClient` | `ai-coding-agents` | EXISTS |
+| Export | Path | Status | Type Check |
+|--------|------|--------|------------|
+| `createAgentRouter` | `ai-coding-agents/express` | EXISTS | Has .d.ts |
+| `IAgentStorage` | `ai-coding-agents/express` | EXISTS | Has .d.ts |
+| `detectFailure`, `categorizeFailure` | `ai-coding-agents/express` | EXISTS | Has .d.ts |
+| `agentReportsTable` | `ai-coding-agents/drizzle` | EXISTS | Has .d.ts |
+| `agentLogsTable` | `ai-coding-agents/drizzle` | EXISTS | Has .d.ts |
+| `projectGuidelinesTable` | `ai-coding-agents/drizzle` | EXISTS | Has .d.ts |
+| `failurePatternsTable` | `ai-coding-agents/drizzle` | EXISTS | Has .d.ts |
+| `initProject` | `ai-coding-agents` | EXISTS | Has .d.ts |
+| `generateStorageScaffold` | `ai-coding-agents` | EXISTS | Has .d.ts |
+| `createMonitorClient` | `ai-coding-agents` | EXISTS | Has .d.ts |
+
+**Export Verification Script** (add to npm-package/package.json):
+```json
+"scripts": {
+  "verify-exports": "tsc --noEmit --declaration --allowJs dist/*.js"
+}
+```
 
 ### CLI Commands (Verified in src/cli.ts)
 
-| Command | Implemented | Works |
-|---------|-------------|-------|
-| `invoke <agent> <prompt>` | YES | Requires OPENAI_API_KEY |
-| `scan <path>` | YES | Works offline |
-| `report <projectId>` | YES | Requires hub API |
-| `analytics [projectId]` | YES | Requires hub API |
-| `generate-rules <projectId>` | YES | Requires hub API |
-| `hooks install/uninstall/status` | YES | Works offline |
-| `init` | YES | Works offline |
-| `help` | YES | Works offline |
-| `verify` | **NO** | Not implemented |
+| Command | Implemented | Works | Dependencies/Notes |
+|---------|-------------|-------|-------------------|
+| `invoke <agent> <prompt>` | YES | Requires OPENAI_API_KEY | Env: OPENAI_API_KEY; fails gracefully with error message if missing |
+| `scan <path>` | YES | Works offline | No deps; uses local file system |
+| `report <projectId>` | YES | Requires hub API | Env: AI_AGENTS_API_URL; timeout after 10s |
+| `analytics [projectId]` | YES | Requires hub API | Same as report; supports optional projectId fallback to config |
+| `generate-rules <projectId>` | YES | Requires hub API | Generates AGENT_RULES.md from analytics |
+| `hooks install/uninstall/status` | YES | Works offline | Requires git repo; modifies .git/hooks |
+| `init` | YES | Works offline | Creates .ai-agents.json and scripts/ai-agents.sh |
+| `help` | YES | Works offline | No deps |
+| `verify` | **NO** | Not implemented | **TO BE ADDED** |
 
 ### API Endpoints Required on Client (From express-router.ts)
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/agents/health` | GET | Health check |
-| `/api/agents/external/report` | POST | Receive agent reports |
-| `/api/agents/reports` | GET | List reports |
-| `/api/agents/monitor/analytics` | GET | View analytics |
-| `/api/agents/guidelines/:projectId` | GET | Get project guidelines |
-| `/api/agents/guidelines/generate` | POST | Force regenerate |
-| `/api/agents/logs/ingest` | POST | Log ingestion |
-| `/api/agents/logs` | GET | Query logs |
-| `/api/agents/logs/stats` | GET | Log statistics |
+| Endpoint | Method | Purpose | Test Command |
+|----------|--------|---------|--------------|
+| `/api/agents/health` | GET | Health check | `curl http://localhost:5000/api/agents/health` |
+| `/api/agents/external/report` | POST | Receive agent reports | Expect `{ reportId, ... }` |
+| `/api/agents/reports` | GET | List reports | Supports `?projectId=&limit=` |
+| `/api/agents/monitor/analytics` | GET | View analytics | Supports `?projectId=` |
+| `/api/agents/guidelines/:projectId` | GET | Get project guidelines | Returns AGENT_RULES.md content |
+| `/api/agents/guidelines/generate` | POST | Force regenerate | Body: `{ projectId }` |
+| `/api/agents/logs/ingest` | POST | Log ingestion | Structured log data |
+| `/api/agents/logs` | GET | Query logs | Supports `?runId=&level=&limit=` |
+| `/api/agents/logs/stats` | GET | Log statistics | Returns byLevel, byAgent counts |
 
 ---
 
@@ -57,25 +64,40 @@
 
 ### Files Client Must Create/Modify
 
-| File | Action | Content Source |
-|------|--------|----------------|
-| `.ai-agents.json` | AUTO (via init) | Generated by init |
-| `scripts/ai-agents.sh` | AUTO (via init) | Generated by init |
-| `shared/schema.ts` | MANUAL | Import from package |
-| `server/storage.ts` | MANUAL | Implement IAgentStorage |
-| `server/routes.ts` | MANUAL | Mount createAgentRouter |
+| File | Action | Content Source | Automation Proposal |
+|------|--------|----------------|---------------------|
+| `.ai-agents.json` | AUTO (via init) | Generated by init | Already good; add JSON schema validation |
+| `scripts/ai-agents.sh` | AUTO (via init) | Generated by init | Already sets chmod 755 |
+| `shared/schema.ts` | MANUAL | Import from package | Future: auto-append imports |
+| `server/storage.ts` | MANUAL | Implement IAgentStorage | **NEW**: `--write-storage` generates scaffold |
+| `server/routes.ts` | MANUAL | Mount createAgentRouter | Document copy-paste snippet |
 
 ### Manual Steps Required (Current State)
 
-1. **Install package**: `npm install github:zambam/ai-coding-agents`
-2. **Run init**: `npx ai-agents init --hub-url <url>`
-3. **Add schema**: Copy import statements to shared/schema.ts
-4. **Run migration**: `npm run db:push`
-5. **Implement storage**: Create storage adapter (80+ lines)
-6. **Mount router**: Add to server/routes.ts
-7. **Test**: curl health endpoint
+| Step | Command/Action | Time | Error Handling |
+|------|----------------|------|----------------|
+| 1. Install package | `npm install github:zambam/ai-coding-agents` | 2 min | Handle auth if private repo |
+| 2. Run init | `npx ai-agents init --hub-url <url> --write-storage` | 3 min | Add `--force` to overwrite |
+| 3. Add schema | Copy imports to shared/schema.ts | 2 min | Clear import path docs |
+| 4. Run migration | `npm run db:push` | 1 min | Ensure drizzle-kit installed |
+| 5. Implement storage | Auto-generated now; customize db connection | 5 min | Scaffold includes TODO comments |
+| 6. Mount router | Add to server/routes.ts | 3 min | Copy-paste snippet |
+| 7. Test health | `curl http://localhost:5000/api/agents/health` | 1 min | Expect `{ "status": "ok" }` |
+| 8. Verify setup | `npx ai-agents verify` | 2 min | **NEW**: Validates all steps |
 
-**Estimated Time**: 30-45 minutes
+**Current Time**: 30-45 minutes  
+**Target Time**: 10-15 minutes (with proposed automations)
+
+### Edge Cases
+
+- **Non-Express frameworks**: Currently only Express supported. Init throws clear error:
+  ```typescript
+  if (options.framework !== 'express') {
+    throw new Error('Only Express framework currently supported. Fastify/Koa/Hono coming soon.');
+  }
+  ```
+- **Private GitHub repo**: Requires npm auth token or SSH key configured
+- **No git repo**: `hooks install` fails gracefully with message
 
 ---
 
@@ -85,35 +107,11 @@
 
 **Current**: `generateStorageScaffold()` exists in src/init.ts but init doesn't write it to a file.
 
-**Evidence** (src/init.ts lines 136-228):
-```typescript
-export function generateStorageScaffold(orm: 'drizzle' | 'prisma' | 'none'): string {
-  if (orm === 'drizzle') {
-    return `...90 lines of working code...`;
-  }
-}
-```
+**Evidence** (src/init.ts lines 136-228): The function returns ~90 lines of working Drizzle storage code.
 
 **FIX PROPOSAL**:
 
-Add `--write-storage` flag to init command.
-
-**Code Change** (src/init.ts - add after line 88):
-```typescript
-// After writing ai-agents.sh, optionally write storage scaffold
-if (options.writeStorage && orm !== 'none') {
-  const storageDir = path.join(projectPath, 'server');
-  const storagePath = path.join(storageDir, 'agent-storage.ts');
-  
-  if (!fs.existsSync(storageDir)) {
-    fs.mkdirSync(storageDir, { recursive: true });
-  }
-  
-  const scaffold = generateStorageScaffold(orm);
-  fs.writeFileSync(storagePath, scaffold.trim());
-  result.filesCreated.push('server/agent-storage.ts');
-}
-```
+Add `--write-storage` and `--force` flags to init command.
 
 **Code Change** (src/init.ts - update InitOptions interface):
 ```typescript
@@ -124,19 +122,87 @@ export interface InitOptions {
   projectId?: string;
   hubUrl?: string;
   writeStorage?: boolean;  // NEW
+  force?: boolean;         // NEW - overwrite existing files
 }
 ```
 
-**Code Change** (src/cli.ts - add flag parsing around line 750):
+**Code Change** (src/init.ts - add after line 88, after writing ai-agents.sh):
 ```typescript
-// In init command parsing
-let writeStorage = false;
-for (let i = 1; i < args.length; i++) {
-  if (args[i] === '--write-storage') {
-    writeStorage = true;
+// Write storage scaffold if requested
+if (options.writeStorage && orm !== 'none') {
+  const serverDir = path.join(projectPath, 'server');
+  const storagePath = path.join(serverDir, 'agent-storage.ts');
+  
+  // Check for existing file
+  if (fs.existsSync(storagePath) && !options.force) {
+    console.warn('Storage file exists. Use --force to overwrite.');
+    result.instructions.push('Storage file already exists. Use --force to overwrite.');
+  } else {
+    if (!fs.existsSync(serverDir)) {
+      fs.mkdirSync(serverDir, { recursive: true });
+    }
+    
+    const scaffoldContent = generateStorageScaffold(orm);
+    // Add customization header
+    const header = `// Auto-generated by: npx ai-agents init --write-storage
+// TODO: Update the db import path to match your project structure
+`;
+    fs.writeFileSync(storagePath, header + scaffoldContent.trim());
+    result.filesCreated.push('server/agent-storage.ts');
+    
+    result.instructions.push('\nStorage adapter created at server/agent-storage.ts');
+    result.instructions.push('Update the import path for your db connection if needed.');
   }
 }
-// Pass to runInit
+```
+
+**Code Change** (src/cli.ts - update init command parsing):
+```typescript
+// In init command section
+const initOptions: InitOptions = {
+  framework: 'express',
+  orm: 'drizzle', 
+  projectPath: process.cwd(),
+  writeStorage: false,
+  force: false,
+};
+
+for (let i = 1; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--write-storage') {
+    initOptions.writeStorage = true;
+  } else if (arg === '--force') {
+    initOptions.force = true;
+  }
+  // ... existing flag parsing
+}
+```
+
+**Code Change** (src/cli.ts - update printHelp):
+```typescript
+Options for 'init':
+  --framework <type>         Framework: express (default), fastify, koa, hono
+  --orm <type>               ORM: drizzle (default), prisma, none
+  --path <dir>               Project path (default: current directory)
+  --project-id <id>          Project identifier (default: directory name)
+  --hub-url <url>            Hub server URL (default: http://localhost:5000)
+  --write-storage            Generate server/agent-storage.ts scaffold
+  --force                    Overwrite existing files without prompting
+```
+
+**Test Commands**:
+```bash
+# First run - creates file
+npx ai-agents init --framework express --orm drizzle --hub-url http://localhost:5000 --write-storage
+
+# Verify file created with TODO comment
+head -3 server/agent-storage.ts
+
+# Second run without force - should warn
+npx ai-agents init --write-storage
+
+# Force overwrite
+npx ai-agents init --write-storage --force
 ```
 
 ---
@@ -147,359 +213,139 @@ for (let i = 1; i < args.length; i++) {
 
 **FIX PROPOSAL**:
 
-Add `verify` command that checks:
-1. `.ai-agents.json` exists and is valid JSON
-2. Hub URL is reachable (optional, skip if offline)
-3. Required files exist
+Add `verify` command with 6 checks and `--verbose` flag for detailed output.
 
-**Code Change** (src/cli.ts - add new function):
+**Code Change** (src/cli.ts - add new function after line 510):
 ```typescript
 interface VerifyOptions {
   offline?: boolean;
+  verbose?: boolean;
 }
 
-interface VerifyResult {
-  passed: boolean;
-  checks: Array<{ name: string; status: 'pass' | 'fail' | 'skip'; message: string }>;
-}
-
-export async function runVerify(options: VerifyOptions): Promise<CommandResult> {
-  const checks: VerifyResult['checks'] = [];
-  
-  // Check 1: .ai-agents.json exists
-  const configPath = path.join(process.cwd(), '.ai-agents.json');
-  if (fs.existsSync(configPath)) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      checks.push({ 
-        name: 'Config file', 
-        status: 'pass', 
-        message: `Found .ai-agents.json (project: ${config.projectId})` 
-      });
-    } catch {
-      checks.push({ name: 'Config file', status: 'fail', message: 'Invalid JSON in .ai-agents.json' });
-    }
-  } else {
-    checks.push({ name: 'Config file', status: 'fail', message: '.ai-agents.json not found. Run: npx ai-agents init' });
-  }
-  
-  // Check 2: CLI wrapper exists
-  const wrapperPath = path.join(process.cwd(), 'scripts', 'ai-agents.sh');
-  if (fs.existsSync(wrapperPath)) {
-    checks.push({ name: 'CLI wrapper', status: 'pass', message: 'scripts/ai-agents.sh exists' });
-  } else {
-    checks.push({ name: 'CLI wrapper', status: 'fail', message: 'scripts/ai-agents.sh not found' });
-  }
-  
-  // Check 3: Hub reachable (skip if offline)
-  if (!options.offline) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      const healthUrl = `${config.hubUrl}/api/agents/health`;
-      const response = await fetch(healthUrl, { method: 'GET', signal: AbortSignal.timeout(5000) });
-      if (response.ok) {
-        checks.push({ name: 'Hub connection', status: 'pass', message: `Hub reachable at ${config.hubUrl}` });
-      } else {
-        checks.push({ name: 'Hub connection', status: 'fail', message: `Hub returned ${response.status}` });
-      }
-    } catch (error) {
-      checks.push({ name: 'Hub connection', status: 'fail', message: `Hub unreachable: ${error}` });
-    }
-  } else {
-    checks.push({ name: 'Hub connection', status: 'skip', message: 'Skipped (offline mode)' });
-  }
-  
-  // Print results
-  console.log('\n=== AI Agents Setup Verification ===\n');
-  let allPassed = true;
-  for (const check of checks) {
-    const icon = check.status === 'pass' ? '[OK]' : check.status === 'fail' ? '[FAIL]' : '[SKIP]';
-    console.log(`${icon} ${check.name}: ${check.message}`);
-    if (check.status === 'fail') allPassed = false;
-  }
-  
-  console.log(allPassed ? '\nAll checks passed!' : '\nSome checks failed. See above.');
-  return { success: allPassed, exitCode: allPassed ? 0 : 1 };
-}
-```
-
-**Code Change** (src/cli.ts - add to parseArgs switch):
-```typescript
-if (command === "verify") {
-  const offline = args.includes("--offline");
-  return await runVerify({ offline });
-}
-```
-
-**Code Change** (src/cli.ts - update printHelp):
-```typescript
-  verify                     Verify setup is correct
-  
-Options for 'verify':
-  --offline                  Skip hub connection check
-```
-
----
-
-### Gap 3: Import Path Aliases
-
-**Current**: Package exports work but not documented in package.json exports field.
-
-**FIX PROPOSAL**:
-
-Add exports field to npm-package/package.json:
-
-```json
-{
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    },
-    "./express": {
-      "types": "./dist/express-router.d.ts",
-      "import": "./dist/express-router.js",
-      "require": "./dist/express-router.js"
-    },
-    "./drizzle": {
-      "types": "./dist/drizzle-schema.d.ts",
-      "import": "./dist/drizzle-schema.js",
-      "require": "./dist/drizzle-schema.js"
-    }
-  }
-}
-```
-
----
-
-## Part 4: Sandbox Testing Strategy
-
-### Method: `npm pack` + Temp Directory (Recommended)
-
-Using `npm pack` simulates actual installation more accurately than `npm link`.
-
-**Test Script** (`scripts/sandbox-test.sh`):
-```bash
-#!/bin/bash
-set -e
-
-echo "=== AI Agents Package Sandbox Test ==="
-TIMESTAMP=$(date +%s)
-SANDBOX_DIR="/tmp/ai-agents-sandbox-$TIMESTAMP"
-PKG_DIR="$(pwd)/npm-package"
-LOG_FILE="/tmp/ai-agents-sandbox-$TIMESTAMP.log"
-
-# Cleanup function
-cleanup() {
-  echo "Cleaning up sandbox..."
-  rm -rf "$SANDBOX_DIR"
-}
-trap cleanup EXIT
-
-echo "[1/7] Building package..."
-cd "$PKG_DIR"
-npm run build:package 2>&1 | tee -a "$LOG_FILE"
-
-echo "[2/7] Packing package..."
-npm pack 2>&1 | tee -a "$LOG_FILE"
-PKG_TGZ=$(ls -t *.tgz | head -1)
-echo "Created: $PKG_TGZ" | tee -a "$LOG_FILE"
-
-echo "[3/7] Creating sandbox project..."
-mkdir -p "$SANDBOX_DIR"
-cd "$SANDBOX_DIR"
-npm init -y 2>&1 | tee -a "$LOG_FILE"
-
-echo "[4/7] Installing package from tarball..."
-npm install "$PKG_DIR/$PKG_TGZ" 2>&1 | tee -a "$LOG_FILE"
-
-echo "[5/7] Testing CLI help..."
-npx ai-agents help 2>&1 | tee -a "$LOG_FILE"
-
-echo "[6/7] Testing init command..."
-npx ai-agents init --framework express --orm drizzle --hub-url http://localhost:5000 2>&1 | tee -a "$LOG_FILE"
-
-echo "[7/7] Verifying created files..."
-if [ -f ".ai-agents.json" ]; then
-  echo "[OK] .ai-agents.json created" | tee -a "$LOG_FILE"
-  cat .ai-agents.json | tee -a "$LOG_FILE"
-else
-  echo "[FAIL] .ai-agents.json not found" | tee -a "$LOG_FILE"
-  exit 1
-fi
-
-if [ -f "scripts/ai-agents.sh" ]; then
-  echo "[OK] scripts/ai-agents.sh created" | tee -a "$LOG_FILE"
-else
-  echo "[FAIL] scripts/ai-agents.sh not found" | tee -a "$LOG_FILE"
-  exit 1
-fi
-
-echo ""
-echo "=== SANDBOX TEST PASSED ==="
-echo "Log file: $LOG_FILE"
-
-# Cleanup tarball
-rm -f "$PKG_DIR/$PKG_TGZ"
-```
-
-### Verification Checks (Logged)
-
-| Check | Command | Expected |
-|-------|---------|----------|
-| Package builds | `npm run build:package` | Exit 0, dist/ populated |
-| Package packs | `npm pack` | Creates .tgz file |
-| Help works | `npx ai-agents help` | Shows usage |
-| Init works | `npx ai-agents init` | Creates .ai-agents.json |
-| Hooks status | `npx ai-agents hooks status` | Shows hook status |
-| Scan works | `npx ai-agents scan .` | Runs without error |
-| Exports resolve | Node require test | All exports accessible |
-
----
-
-## Part 5: Phase A - Documentation (DONE)
-
-| Task | File | Status |
-|------|------|--------|
-| A1 | `docs/QUICKSTART.md` | DONE |
-| A2 | `npm-package/README.md` | DONE - added link |
-| A3 | Cleanup old proposals | PENDING |
-
----
-
-## Part 6: Phase B - CLI Enhancements
-
-### B1: Add `--write-storage` Flag to Init
-
-**Files to Modify**:
-- `src/init.ts` (add writeStorage option + file writing logic)
-- `src/cli.ts` (parse --write-storage flag, pass to initProject)
-
-**Implementation Steps**:
-
-1. Update InitOptions interface in `src/init.ts`:
-```typescript
-export interface InitOptions {
-  framework: 'express' | 'fastify' | 'koa' | 'hono';
-  orm: 'drizzle' | 'prisma' | 'none';
-  projectPath: string;
-  projectId?: string;
-  hubUrl?: string;
-  writeStorage?: boolean;  // ADD THIS
-}
-```
-
-2. Add file writing logic in `initProject()` after line 88 in `src/init.ts`:
-```typescript
-// Write storage scaffold if requested
-if (options.writeStorage && orm !== 'none') {
-  const serverDir = path.join(projectPath, 'server');
-  const storagePath = path.join(serverDir, 'agent-storage.ts');
-  
-  if (!fs.existsSync(serverDir)) {
-    fs.mkdirSync(serverDir, { recursive: true });
-  }
-  
-  const scaffoldContent = generateStorageScaffold(orm);
-  fs.writeFileSync(storagePath, scaffoldContent.trim());
-  result.filesCreated.push('server/agent-storage.ts');
-  
-  result.instructions.push('\nStorage adapter created at server/agent-storage.ts');
-  result.instructions.push('Update the import path for your db connection if needed.');
-}
-```
-
-3. Update CLI parsing in `src/cli.ts` around line 750:
-```typescript
-// In init command section
-const initOptions: InitProjectOptions = {
-  framework: 'express',
-  orm: 'drizzle', 
-  projectPath: process.cwd(),
-  writeStorage: false,  // ADD
-};
-
-for (let i = 1; i < args.length; i++) {
-  const arg = args[i];
-  if (arg === '--write-storage') {
-    initOptions.writeStorage = true;
-  }
-  // ... existing flag parsing
-}
-```
-
-4. Update help text in `printHelp()`:
-```typescript
-Options for 'init':
-  --framework <type>         Framework: express (default), fastify, koa, hono
-  --orm <type>               ORM: drizzle (default), prisma, none
-  --path <dir>               Project path (default: current directory)
-  --project-id <id>          Project identifier (default: directory name)
-  --hub-url <url>            Hub server URL (default: http://localhost:5000)
-  --write-storage            Generate server/agent-storage.ts scaffold  # ADD
-```
-
-**Test Command**:
-```bash
-npx ai-agents init --framework express --orm drizzle --hub-url http://localhost:5000 --write-storage
-ls -la server/agent-storage.ts
-```
-
----
-
-### B2: Add `verify` Command
-
-**Files to Modify**:
-- `src/cli.ts` (add runVerify function + command parsing)
-
-**Implementation** (add to src/cli.ts after line 510):
-```typescript
-interface VerifyOptions {
-  offline?: boolean;
+interface VerifyCheck {
+  name: string;
+  status: 'pass' | 'fail' | 'skip';
+  message: string;
+  details?: string;
 }
 
 export async function runVerify(options: VerifyOptions): Promise<CommandResult> {
   const fs = await import("fs");
   const path = await import("path");
+  const { execSync } = await import("child_process");
   
-  const checks: Array<{ name: string; status: 'pass' | 'fail' | 'skip'; message: string }> = [];
+  const checks: VerifyCheck[] = [];
   const configPath = path.join(process.cwd(), '.ai-agents.json');
   let config: { projectId?: string; hubUrl?: string } | null = null;
   
-  // Check 1: Config file exists and is valid
+  // Check 1: Config file exists and is valid JSON
   if (fs.existsSync(configPath)) {
     try {
       config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       checks.push({ 
         name: 'Config file', 
         status: 'pass', 
-        message: `.ai-agents.json valid (project: ${config?.projectId || 'unknown'})` 
+        message: `.ai-agents.json valid (project: ${config?.projectId || 'unknown'})`,
+        details: JSON.stringify(config, null, 2)
       });
-    } catch {
-      checks.push({ name: 'Config file', status: 'fail', message: 'Invalid JSON in .ai-agents.json' });
+    } catch (e) {
+      checks.push({ 
+        name: 'Config file', 
+        status: 'fail', 
+        message: 'Invalid JSON in .ai-agents.json',
+        details: e instanceof Error ? e.message : String(e)
+      });
     }
   } else {
-    checks.push({ name: 'Config file', status: 'fail', message: '.ai-agents.json not found. Run: npx ai-agents init' });
+    checks.push({ 
+      name: 'Config file', 
+      status: 'fail', 
+      message: '.ai-agents.json not found. Run: npx ai-agents init' 
+    });
   }
   
-  // Check 2: CLI wrapper script
+  // Check 2: CLI wrapper script exists and is executable
   const wrapperPath = path.join(process.cwd(), 'scripts', 'ai-agents.sh');
   if (fs.existsSync(wrapperPath)) {
-    checks.push({ name: 'CLI wrapper', status: 'pass', message: 'scripts/ai-agents.sh exists' });
+    try {
+      fs.accessSync(wrapperPath, fs.constants.X_OK);
+      checks.push({ 
+        name: 'CLI wrapper', 
+        status: 'pass', 
+        message: 'scripts/ai-agents.sh exists and is executable' 
+      });
+    } catch {
+      checks.push({ 
+        name: 'CLI wrapper', 
+        status: 'fail', 
+        message: 'scripts/ai-agents.sh exists but is not executable. Run: chmod +x scripts/ai-agents.sh' 
+      });
+    }
   } else {
-    checks.push({ name: 'CLI wrapper', status: 'fail', message: 'scripts/ai-agents.sh not found' });
+    checks.push({ 
+      name: 'CLI wrapper', 
+      status: 'fail', 
+      message: 'scripts/ai-agents.sh not found' 
+    });
   }
   
-  // Check 3: Storage file (optional)
+  // Check 3: Storage adapter exists
   const storagePath = path.join(process.cwd(), 'server', 'agent-storage.ts');
   if (fs.existsSync(storagePath)) {
-    checks.push({ name: 'Storage adapter', status: 'pass', message: 'server/agent-storage.ts exists' });
+    const content = fs.readFileSync(storagePath, 'utf-8');
+    if (content.includes('IAgentStorage')) {
+      checks.push({ 
+        name: 'Storage adapter', 
+        status: 'pass', 
+        message: 'server/agent-storage.ts implements IAgentStorage' 
+      });
+    } else {
+      checks.push({ 
+        name: 'Storage adapter', 
+        status: 'fail', 
+        message: 'server/agent-storage.ts missing IAgentStorage implementation' 
+      });
+    }
   } else {
-    checks.push({ name: 'Storage adapter', status: 'skip', message: 'server/agent-storage.ts not found (optional)' });
+    checks.push({ 
+      name: 'Storage adapter', 
+      status: 'skip', 
+      message: 'server/agent-storage.ts not found (run init with --write-storage)' 
+    });
   }
   
-  // Check 4: Hub connectivity (unless offline)
+  // Check 4: Package exports resolve correctly
+  const testPath = path.join(process.cwd(), '.ai-agents-test-imports.js');
+  try {
+    fs.writeFileSync(testPath, `
+      try {
+        require('ai-coding-agents');
+        require('ai-coding-agents/express');
+        require('ai-coding-agents/drizzle');
+        console.log('ok');
+      } catch (e) {
+        console.error(e.message);
+        process.exit(1);
+      }
+    `);
+    execSync(`node ${testPath}`, { encoding: 'utf-8' });
+    checks.push({ 
+      name: 'Package exports', 
+      status: 'pass', 
+      message: 'All package imports resolve correctly' 
+    });
+  } catch (e) {
+    checks.push({ 
+      name: 'Package exports', 
+      status: 'fail', 
+      message: 'Package imports failed',
+      details: e instanceof Error ? e.message : String(e)
+    });
+  } finally {
+    if (fs.existsSync(testPath)) fs.unlinkSync(testPath);
+  }
+  
+  // Check 5: Hub connectivity (unless offline)
   if (!options.offline && config?.hubUrl) {
     try {
       const healthUrl = `${config.hubUrl}/api/agents/health`;
@@ -515,16 +361,57 @@ export async function runVerify(options: VerifyOptions): Promise<CommandResult> 
           message: `Hub reachable at ${config.hubUrl} (status: ${data.status || 'ok'})` 
         });
       } else {
-        checks.push({ name: 'Hub connection', status: 'fail', message: `Hub returned HTTP ${response.status}` });
+        checks.push({ 
+          name: 'Hub connection', 
+          status: 'fail', 
+          message: `Hub returned HTTP ${response.status}` 
+        });
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      checks.push({ name: 'Hub connection', status: 'fail', message: `Hub unreachable: ${msg}` });
+      checks.push({ 
+        name: 'Hub connection', 
+        status: 'fail', 
+        message: `Hub unreachable: ${msg}` 
+      });
     }
   } else if (options.offline) {
-    checks.push({ name: 'Hub connection', status: 'skip', message: 'Skipped (--offline mode)' });
+    checks.push({ 
+      name: 'Hub connection', 
+      status: 'skip', 
+      message: 'Skipped (--offline mode)' 
+    });
   } else {
-    checks.push({ name: 'Hub connection', status: 'skip', message: 'No hubUrl in config' });
+    checks.push({ 
+      name: 'Hub connection', 
+      status: 'skip', 
+      message: 'No hubUrl in config' 
+    });
+  }
+  
+  // Check 6: Git hooks installed
+  const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
+  if (fs.existsSync(hookPath)) {
+    const content = fs.readFileSync(hookPath, 'utf-8');
+    if (content.includes('ai-agents')) {
+      checks.push({ 
+        name: 'Git hooks', 
+        status: 'pass', 
+        message: 'AI agents git hooks installed' 
+      });
+    } else {
+      checks.push({ 
+        name: 'Git hooks', 
+        status: 'skip', 
+        message: 'post-commit hook exists but not for ai-agents' 
+      });
+    }
+  } else {
+    checks.push({ 
+      name: 'Git hooks', 
+      status: 'skip', 
+      message: 'Git hooks not installed (run: npx ai-agents hooks install)' 
+    });
   }
   
   // Print results
@@ -533,25 +420,33 @@ export async function runVerify(options: VerifyOptions): Promise<CommandResult> 
   for (const check of checks) {
     const icon = check.status === 'pass' ? '[OK]  ' : check.status === 'fail' ? '[FAIL]' : '[SKIP]';
     console.log(`${icon} ${check.name}: ${check.message}`);
+    if (options.verbose && check.details) {
+      console.log(`       Details: ${check.details}`);
+    }
     if (check.status === 'fail') allPassed = false;
   }
   
   const failCount = checks.filter(c => c.status === 'fail').length;
-  console.log(allPassed ? '\nAll checks passed!' : `\n${failCount} check(s) failed.`);
+  const passCount = checks.filter(c => c.status === 'pass').length;
+  const skipCount = checks.filter(c => c.status === 'skip').length;
+  
+  console.log(`\nSummary: ${passCount} passed, ${failCount} failed, ${skipCount} skipped`);
+  console.log(allPassed ? 'Setup is complete!' : `${failCount} check(s) need attention.`);
   
   return { success: allPassed, exitCode: allPassed ? 0 : 1 };
 }
 ```
 
-**Add to parseArgs switch** (around line 637):
+**Code Change** (src/cli.ts - add to parseArgs switch):
 ```typescript
 if (command === "verify") {
   const offline = args.includes("--offline");
-  return await runVerify({ offline });
+  const verbose = args.includes("--verbose");
+  return await runVerify({ offline, verbose });
 }
 ```
 
-**Update printHelp**:
+**Code Change** (src/cli.ts - update printHelp):
 ```typescript
 Commands:
   ...
@@ -559,26 +454,31 @@ Commands:
   
 Options for 'verify':
   --offline                  Skip hub connection check
+  --verbose                  Show detailed output for each check
 ```
 
 **Test Commands**:
 ```bash
-# Without hub
+# Basic verification (offline)
 npx ai-agents verify --offline
 
-# With hub running
+# With verbose output
+npx ai-agents verify --offline --verbose
+
+# Full verification with hub
 npx ai-agents verify
 ```
 
 ---
 
-## Part 7: Phase C - Package Configuration
+### Gap 3: Import Path Aliases
 
-### C1: Add Exports Field to package.json
+**Current**: Package exports work but not documented in package.json exports field.
 
-**File**: `npm-package/package.json`
+**FIX PROPOSAL**:
 
-**Add after "main" field**:
+Add complete exports field to npm-package/package.json:
+
 ```json
 {
   "main": "dist/index.js",
@@ -611,20 +511,148 @@ npx ai-agents verify
 }
 ```
 
+**Verification**: After npm pack, test in sandbox:
+```javascript
+// test-imports.js
+const main = require('ai-coding-agents');
+const express = require('ai-coding-agents/express');
+const drizzle = require('ai-coding-agents/drizzle');
+
+console.log('Main exports:', Object.keys(main).length);
+console.log('Express exports:', Object.keys(express).length);
+console.log('Drizzle exports:', Object.keys(drizzle).length);
+
+if (!express.createAgentRouter) throw new Error('Missing createAgentRouter');
+if (!drizzle.agentReportsTable) throw new Error('Missing agentReportsTable');
+console.log('All imports OK!');
+```
+
+---
+
+## Part 4: Sandbox Testing Strategy
+
+### Method: `npm pack` + Temp Directory (Recommended)
+
+Using `npm pack` simulates actual installation more accurately than `npm link`. This is implemented as a cross-platform Node.js script.
+
+### Verification Checks (Logged)
+
+| # | Check | Command | Expected | Logged To |
+|---|-------|---------|----------|-----------|
+| 1 | Package builds | `npm run build:package` | Exit 0, dist/ populated | test.log |
+| 2 | Package packs | `npm pack` | Creates .tgz file | test.log |
+| 3 | Init sandbox | `npm init -y` | package.json created | test.log |
+| 4 | Install tarball | `npm install <tgz>` | Package in node_modules | test.log |
+| 5 | CLI help | `npx ai-agents help` | Shows usage | test.log |
+| 6 | Init command | `npx ai-agents init --write-storage` | Creates config files | test.log |
+| 7 | Config file | Check .ai-agents.json | Valid JSON | test.log |
+| 8 | Wrapper script | Check scripts/ai-agents.sh | Exists + executable | test.log |
+| 9 | Storage file | Check server/agent-storage.ts | Exists (with --write-storage) | test.log |
+| 10 | Hooks status | `npx ai-agents hooks status` | No errors | test.log |
+| 11 | Verify command | `npx ai-agents verify --offline` | All checks pass | test.log |
+| 12 | Export resolution | Node require test | All imports work | test.log |
+
+### CI Integration
+
+Add to `.github/workflows/test.yml`:
+```yaml
+- name: Run sandbox tests
+  run: npx tsx scripts/sandbox-test.ts
+```
+
+---
+
+## Part 5: Phase A - Documentation (DONE)
+
+| Task | File | Status |
+|------|------|--------|
+| A1 | `docs/QUICKSTART.md` | DONE |
+| A2 | `npm-package/README.md` | DONE - added link |
+| A3 | Cleanup old proposals | PENDING |
+
+---
+
+## Part 6: Phase B - CLI Enhancements
+
+### B1: Add `--write-storage` and `--force` Flags to Init
+
+**Files to Modify**:
+- `src/init.ts` (add writeStorage + force options, file writing logic)
+- `src/cli.ts` (parse flags, pass to initProject)
+
+**Implementation Checklist**:
+
+- [ ] Update `InitOptions` interface with `writeStorage?: boolean` and `force?: boolean`
+- [ ] Add file existence check with `--force` bypass
+- [ ] Add TODO comment header to generated file
+- [ ] Create server/ directory if missing
+- [ ] Update CLI flag parsing in parseArgs
+- [ ] Update printHelp with new options
+- [ ] Test: `npx ai-agents init --write-storage`
+- [ ] Test: `npx ai-agents init --write-storage --force` (overwrites)
+- [ ] Verify generated file includes TODO comment
+
+**Test Cases**:
+1. Fresh project → creates server/agent-storage.ts
+2. File exists, no --force → warns, doesn't overwrite
+3. File exists, with --force → overwrites with header
+4. Non-Drizzle ORM → appropriate behavior
+
+---
+
+### B2: Add `verify` Command with `--verbose`
+
+**Files to Modify**:
+- `src/cli.ts` (add runVerify function + command parsing)
+
+**Implementation Checklist**:
+
+- [ ] Add VerifyOptions interface with `offline?: boolean` and `verbose?: boolean`
+- [ ] Add VerifyCheck interface with `details` field
+- [ ] Implement 6 checks:
+  1. Config file valid JSON
+  2. Wrapper script exists + executable
+  3. Storage adapter implements IAgentStorage
+  4. Package exports resolve
+  5. Hub connection (skip if offline)
+  6. Git hooks installed
+- [ ] Add --verbose flag for detailed output
+- [ ] Add summary line with pass/fail/skip counts
+- [ ] Update parseArgs with verify command
+- [ ] Update printHelp
+- [ ] Test: `npx ai-agents verify --offline`
+- [ ] Test: `npx ai-agents verify --verbose`
+
+---
+
+## Part 7: Phase C - Package Configuration
+
+### C1: Add Exports Field to package.json
+
+**File**: `npm-package/package.json`
+
+See Gap 3 for exact JSON to add.
+
 ### C2: Verify Dependencies
 
-Check that all runtime dependencies are in `dependencies` (not `devDependencies`):
+Run: `npm ls --production` to check for devDeps leaking into production.
 
-**Required in dependencies**:
+**Required in dependencies** (not devDependencies):
 - `drizzle-orm` (for schema exports)
 - `uuid` (for report IDs)
 - `pino` (for logging)
+
+**Should be in devDependencies**:
+- `typescript`
+- `@types/*`
+- `tsx`
+- `vitest`
 
 ### C3: Verify .npmignore
 
 **File**: `npm-package/.npmignore`
 
-Should include:
+Required exclusions:
 ```
 src/
 *.ts
@@ -640,7 +668,7 @@ node_modules/
 
 ---
 
-## Part 8: Automated Sandbox Testing (Simulated Environment)
+## Part 8: Automated Sandbox Testing (Cross-Platform Node.js)
 
 ### Test Runner Script
 
@@ -651,6 +679,7 @@ node_modules/
  * Sandbox Test Runner
  * 
  * Simulates client installation in temp directory.
+ * Cross-platform (Node.js, not bash).
  * Logs all steps for verification.
  * 
  * Usage: npx tsx scripts/sandbox-test.ts
@@ -670,13 +699,16 @@ interface TestResult {
 
 const SANDBOX_DIR = `/tmp/ai-agents-sandbox-${Date.now()}`;
 const LOG_FILE = `${SANDBOX_DIR}/test.log`;
+const RESULTS_FILE = `${SANDBOX_DIR}/results.json`;
 const RESULTS: TestResult[] = [];
 
 function log(msg: string) {
   const timestamp = new Date().toISOString();
   const line = `[${timestamp}] ${msg}`;
   console.log(line);
-  fs.appendFileSync(LOG_FILE, line + '\n');
+  if (fs.existsSync(path.dirname(LOG_FILE))) {
+    fs.appendFileSync(LOG_FILE, line + '\n');
+  }
 }
 
 function runTest(name: string, fn: () => string): TestResult {
@@ -755,33 +787,56 @@ async function main() {
     return exec('npx ai-agents help', SANDBOX_DIR);
   });
   
-  // Test 6: Init creates config
-  runTest('Init command', () => {
-    return exec('npx ai-agents init --framework express --orm drizzle --hub-url http://localhost:5000', SANDBOX_DIR);
+  // Test 6: Init creates config (with --write-storage)
+  runTest('Init command with --write-storage', () => {
+    return exec('npx ai-agents init --framework express --orm drizzle --hub-url http://localhost:5000 --write-storage', SANDBOX_DIR);
   });
   
   // Test 7: Config file exists
   runTest('Config file created', () => {
     const configPath = path.join(SANDBOX_DIR, '.ai-agents.json');
     if (!fs.existsSync(configPath)) throw new Error('File not found');
-    return fs.readFileSync(configPath, 'utf-8');
+    const content = fs.readFileSync(configPath, 'utf-8');
+    JSON.parse(content); // Validate JSON
+    return content;
   });
   
-  // Test 8: Wrapper script exists
+  // Test 8: Wrapper script exists and executable
   runTest('Wrapper script created', () => {
     const scriptPath = path.join(SANDBOX_DIR, 'scripts', 'ai-agents.sh');
     if (!fs.existsSync(scriptPath)) throw new Error('File not found');
+    // Check executable bit
+    try {
+      fs.accessSync(scriptPath, fs.constants.X_OK);
+    } catch {
+      throw new Error('Script not executable');
+    }
     return fs.readFileSync(scriptPath, 'utf-8');
   });
   
-  // Test 9: Hooks status works
+  // Test 9: Storage file created (from --write-storage)
+  runTest('Storage adapter created', () => {
+    const storagePath = path.join(SANDBOX_DIR, 'server', 'agent-storage.ts');
+    if (!fs.existsSync(storagePath)) throw new Error('File not found');
+    const content = fs.readFileSync(storagePath, 'utf-8');
+    if (!content.includes('IAgentStorage')) throw new Error('Missing IAgentStorage');
+    if (!content.includes('TODO')) throw new Error('Missing TODO comment');
+    return `File exists with IAgentStorage implementation (${content.length} chars)`;
+  });
+  
+  // Test 10: Hooks status works
   runTest('Hooks status', () => {
     // Init git repo first
     exec('git init', SANDBOX_DIR);
     return exec('npx ai-agents hooks status', SANDBOX_DIR);
   });
   
-  // Test 10: Exports resolve
+  // Test 11: Verify command works (offline)
+  runTest('Verify command (offline)', () => {
+    return exec('npx ai-agents verify --offline', SANDBOX_DIR);
+  });
+  
+  // Test 12: Exports resolve
   runTest('Export resolution', () => {
     const testScript = `
       const pkg = require('ai-coding-agents');
@@ -812,15 +867,18 @@ async function main() {
   }
   
   // Write full results
-  const resultsPath = path.join(SANDBOX_DIR, 'results.json');
-  fs.writeFileSync(resultsPath, JSON.stringify(RESULTS, null, 2));
-  log(`\nFull results: ${resultsPath}`);
+  fs.writeFileSync(RESULTS_FILE, JSON.stringify(RESULTS, null, 2));
+  log(`\nFull results: ${RESULTS_FILE}`);
   log(`Full log: ${LOG_FILE}`);
   
-  // Cleanup tarball
+  // Cleanup tarball (but keep sandbox for inspection)
   if (tgzPath && fs.existsSync(tgzPath)) {
     fs.unlinkSync(tgzPath);
+    log(`Cleaned up tarball: ${tgzPath}`);
   }
+  
+  log(`\nSandbox preserved at: ${SANDBOX_DIR}`);
+  log('Run `rm -rf ' + SANDBOX_DIR + '` to clean up');
   
   // Exit with appropriate code
   process.exit(failed > 0 ? 1 : 0);
@@ -841,17 +899,21 @@ npx tsx scripts/sandbox-test.ts
 # View results
 cat /tmp/ai-agents-sandbox-*/test.log
 cat /tmp/ai-agents-sandbox-*/results.json
+
+# Cleanup
+rm -rf /tmp/ai-agents-sandbox-*
 ```
 
 ### What Gets Logged
 
-| Item | Location |
-|------|----------|
-| Test results (pass/fail) | Console + test.log |
-| Command output | test.log |
-| Timing per test | results.json |
-| Error messages | results.json |
-| Created files content | test.log |
+| Item | Location | Format |
+|------|----------|--------|
+| Test results (pass/fail) | Console + test.log | Timestamped lines |
+| Command output | test.log | Full stdout |
+| Timing per test | results.json | Duration in ms |
+| Error messages | results.json | Error strings |
+| Created files content | test.log | File contents |
+| Summary | Console + test.log | Pass/fail counts |
 
 ---
 
@@ -866,13 +928,14 @@ cat /tmp/ai-agents-sandbox-*/results.json
 | `AI_AGENTS_LOG_HTTP` | For logging | - | HTTP log endpoint |
 | `OPENAI_API_KEY` | For invoke | - | Agent invocations |
 
-### Auto-Set by Init
+### Auto-Set by Init (in scripts/ai-agents.sh)
 
-| Variable | Set In | Value |
-|----------|--------|-------|
-| `AI_AGENTS_API_URL` | scripts/ai-agents.sh | From --hub-url |
-| `AI_AGENTS_PROJECT_ID` | scripts/ai-agents.sh | From --project-id or dirname |
-| `AI_AGENTS_LOG_HTTP` | scripts/ai-agents.sh | `{hub-url}/api/agents/logs/ingest` |
+| Variable | Value |
+|----------|-------|
+| `AI_AGENTS_API_URL` | From `--hub-url` flag |
+| `AI_AGENTS_PROJECT_ID` | From `--project-id` or directory name |
+| `AI_AGENTS_LOG_HTTP` | `{hub-url}/api/agents/logs/ingest` |
+| `AI_AGENTS_LOG_LEVEL` | `info` |
 
 ---
 
@@ -886,39 +949,81 @@ cat /tmp/ai-agents-sandbox-*/results.json
 
 ### Phase B (Implementation Required)
 
-- [ ] B1: Add `--write-storage` flag to init
-  - [ ] Update InitOptions interface
-  - [ ] Add file writing logic
-  - [ ] Update CLI flag parsing
-  - [ ] Update help text
-- [ ] B2: Add `verify` command
-  - [ ] Implement runVerify function
-  - [ ] Add to parseArgs switch
-  - [ ] Update help text
-- [ ] Test both commands in sandbox
+**B1: --write-storage flag**
+- [ ] Update InitOptions interface (add writeStorage, force)
+- [ ] Add file existence check with --force bypass
+- [ ] Add TODO header comment to generated file
+- [ ] Create server/ directory if missing
+- [ ] Update CLI flag parsing
+- [ ] Update printHelp
+- [ ] Test: fresh init creates file
+- [ ] Test: existing file + --force overwrites
+
+**B2: verify command**
+- [ ] Add VerifyOptions with offline + verbose
+- [ ] Implement 6 checks (config, wrapper, storage, exports, hub, hooks)
+- [ ] Add --verbose for detailed output
+- [ ] Add summary with counts
+- [ ] Update parseArgs switch
+- [ ] Update printHelp
+- [ ] Test: verify --offline passes after init
+- [ ] Test: verify --verbose shows details
 
 ### Phase C (Configuration Required)
 
-- [ ] C1: Add exports field to package.json
-- [ ] C2: Verify runtime dependencies
-- [ ] C3: Verify .npmignore
+- [ ] C1: Add exports field to npm-package/package.json
+- [ ] C2: Verify runtime deps with `npm ls --production`
+- [ ] C3: Verify .npmignore exclusions
 
 ### Post-Implementation Testing
 
-- [ ] Run `scripts/sandbox-test.ts`
-- [ ] Verify all 10 tests pass
+- [ ] Create scripts/sandbox-test.ts
+- [ ] Run sandbox test: `npx tsx scripts/sandbox-test.ts`
+- [ ] Verify all 12 tests pass
 - [ ] Review test.log for issues
+- [ ] Verify results.json has timing data
 - [ ] Clean up tarball artifacts
+
+### CI Integration (Future)
+
+- [ ] Add sandbox test to GitHub Actions workflow
+- [ ] Configure test failure notifications
 
 ---
 
-## Appendix: Files to Delete
+## Appendix A: Files to Delete
 
 Outdated/contradicting proposal files:
 
 ```
 docs/INSTALL_IMPROVEMENT_PROPOSAL.md  # Has fictional verify command (now real)
 docs/NPM_PACKAGE_PREP_PROPOSAL.md     # Review for conflicts
+docs/OLD_SETUP.md                     # If exists
+```
+
+---
+
+## Appendix B: Quick Reference Commands
+
+```bash
+# Full client setup (target: ~10 min)
+npm install github:zambam/ai-coding-agents
+npx ai-agents init --hub-url http://your-hub:5000 --write-storage
+# Add imports to shared/schema.ts
+npm run db:push
+# Mount router in server/routes.ts
+npx ai-agents verify
+npx ai-agents hooks install
+
+# Development testing
+npx tsx scripts/sandbox-test.ts       # Run all sandbox tests
+npx ai-agents verify --offline        # Check setup without hub
+npx ai-agents scan ./src              # Scan for issues
+
+# Package maintenance
+cd npm-package && npm run build:package  # Build
+npm pack                                 # Create tarball
+npm run verify-exports                   # Check types
 ```
 
 ---
@@ -926,8 +1031,9 @@ docs/NPM_PACKAGE_PREP_PROPOSAL.md     # Review for conflicts
 **Status**: AWAITING REVIEW
 
 Upon approval:
-1. Implement Phase B (CLI enhancements)
+1. Implement Phase B (CLI enhancements with --force, --verbose)
 2. Implement Phase C (package configuration)
-3. Create sandbox-test.ts
+3. Create scripts/sandbox-test.ts
 4. Run full sandbox test with logging
 5. Clean up old proposals
+6. Update replit.md with changes
