@@ -1,0 +1,85 @@
+attached_assets
+Create proposal for AI agent monitoring and guideline system
+2 hours ago
+client
+Update agent names and enhance code review processes
+yesterday
+docs
+Improve package configuration and code quality checks
+40 minutes ago
+npm-package
+Improve package configuration and code quality checks
+40 minutes ago
+script
+Extracted stack files
+yesterday
+scripts
+Improve package configuration and code quality checks
+40 minutes ago
+server
+Improve package configuration and code quality checks
+40 minutes ago
+shared
+Improve package configuration and code quality checks
+40 minutes ago
+src
+Improve package configuration and code quality checks
+40 minutes ago
+temp-repo
+Prepare and publish AI coding agents NPM package
+26 minutes ago
+templates
+Add code scanning capabilities to detect fake data and security issues
+17 hours ago
+.gitignore
+Extracted stack files
+yesterday
+.npmignore
+Improve package configuration and code quality checks
+40 minutes ago
+.replit
+Refine how severity defaults are assigned for detected failures
+1 hour ago
+README.md
+Update documentation to include installation and usage examples
+20 hours ago
+README.npm.md
+Prepare AI coding agents package for publishing to NPM
+20 hours ago
+components.json
+Extracted stack files
+yesterday
+design_guidelines.md
+Extracted stack files
+yesterday
+drizzle.config.ts
+Extracted stack files
+yesterday
+package-lock.json
+Add GitHub integration for AI-powered code reviews and issue analysis
+2 hours ago
+package.json
+Add GitHub integration for AI-powered code reviews and issue analysis
+2 hours ago
+package.npm.json
+Prepare AI coding agents package for publishing to NPM
+20 hours ago
+postcss.config.js
+Extracted stack files
+yesterday
+replit.md
+Add comprehensive AI agent monitoring and reporting system
+1 hour ago
+tailwind.config.ts
+Extracted stack files
+yesterday
+tsconfig.json
+Extracted stack files
+yesterday
+tsconfig.package.json
+Improve package configuration and code quality checks
+40 minutes ago
+vite.config.ts
+Extracted stack files
+yesterday
+vitest.config.ts
