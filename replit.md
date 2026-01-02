@@ -88,6 +88,14 @@ Before any commit:
 
 ## Recent Changes
 
+- **AI Agent Monitor Proposal Created**
+  - Comprehensive proposal for monitoring external AI agents (Replit, Cursor, Copilot, Claude)
+  - 3-part system: Agent Monitor, Guidelines Generator, Performance Optimizer
+  - Based on 2025 research (1.7x more bugs, 2.74x higher security vulnerabilities in AI code)
+  - Auto-generates AGENT_RULES.md for projects based on failure patterns
+  - CLI commands: report, generate-rules, analytics
+  - Document: docs/AI_AGENT_MONITOR_PROPOSAL.md (pending review)
+
 - **GitHub Integration Added**
   - PR review: Analyze pull requests with Architect, Mechanic, and Code Ninja agents
   - Issue analysis: Classify issues, root cause analysis, suggest solutions

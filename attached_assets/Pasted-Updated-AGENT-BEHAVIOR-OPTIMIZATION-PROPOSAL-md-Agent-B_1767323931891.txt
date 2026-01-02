@@ -1,0 +1,215 @@
+Updated AGENT_BEHAVIOR_OPTIMIZATION_PROPOSAL.md
+# Agent Behavior Optimization Proposal
+**Version:** 2.1  
+**Date:** January 2, 2026  
+**Status:** PROPOSED  
+**Method:** 3-Pass Optimized Workflow (7 AI Calls)
+---
+## Executive Summary
+This proposal outlines an optimized 3-pass workflow for agent coordination, reducing complexity while maintaining quality. The goal is to streamline Architect and Mechanic interactions with trigger-based Philosopher involvement.
+**Key Targets:**
+- Reduce AI calls from 10+ to 7 total
+- 50-70% latency improvement via structured passes
+- Philosopher trigger-based (not always-on)
+- Joint validation for efficiency
+---
+## Optimized 3-Pass Structure
+### Pass 1: Foundation & Initial Findings (3 calls)
+| Step | Agent | Role |
+|------|-------|------|
+| 1 | Philosopher | Sets meta-context, goals, opportunities |
+| 2 | Architect | Generates findings/plan (READ → THINK → RESPOND) |
+| 3 | Mechanic | Validates + adds own findings |
+**Joint Resolution:** Auto-merge simple conflicts; escalate to Philosopher if needed.
+### Pass 2: Refinement & Cross-Validation (2 calls)
+| Step | Agent | Role |
+|------|-------|------|
+| 4 | Architect | Updates plan from Mechanic feedback |
+| 5 | Mechanic | Validates updates + edge cases |
+**Philosopher Trigger:** If changes exceed threshold, Philosopher checks alignment + spots adjacents.
+### Pass 3: Final Resolution & Sign-off (2 calls)
+| Step | Agent | Role |
+|------|-------|------|
+| 6 | Architect | Finalizes roadmap |
+| 7 | Mechanic + Philosopher | Joint validation (combined call) |
+---
+## Full Resolution Flow Diagram
+PASS 1: FOUNDATION (3 calls)
+════════════════════════════
+┌────────────────────────────────────────────┐
+│ PHILOSOPHER: Meta-Goals & Opportunities │
+│ • Project targets and success metrics │
+│ • Initial adjacents (optimization paths) │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ ARCHITECT: READ → THINK → RESPOND │
+│ • Findings (ARCH-001...) & draft plan │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ MECHANIC: Validate + Own Findings │
+│ • Corrections, MECH-001... │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ JOINT RESOLUTION (Auto or Escalate) │
+│ • Merge conflicts; Philosopher if complex │
+└────────────────────────────────────────────┘
+
+PASS 2: REFINEMENT (2 calls)
+════════════════════════════
+┌────────────────────────────────────────────┐
+│ ARCHITECT: Update Plan from Mechanic │
+│ • Incorporate edge cases │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ MECHANIC: Validate Updates │
+│ • Risk analysis │
+└─────────────────┬──────────────────────────┘
+▼ (Trigger if changes significant)
+┌────────────────────────────────────────────┐
+│ PHILOSOPHER: Alignment + Adjacents │
+│ • Confirm goals; spot new opportunities │
+└────────────────────────────────────────────┘
+
+PASS 3: FINAL (2 calls)
+═══════════════════════
+┌────────────────────────────────────────────┐
+│ ARCHITECT: Final Roadmap │
+│ • All findings addressed │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ MECHANIC + PHILOSOPHER: Joint Validation │
+│ • Checklist + achievement confirm │
+└─────────────────┬──────────────────────────┘
+▼
+┌────────────────────────────────────────────┐
+│ FINAL SIGN-OFF (All Agents) │
+│ • Proceed to implementation │
+└────────────────────────────────────────────┘
+
+---
+## Expected Output Document Structure
+```markdown
+# [Feature/Task] Implementation Plan
+**Version:** 1.0
+**Date:** [Date]
+**Status:** Review Complete
+---
+## 1. Meta-Goals & Initial Opportunities (PHILOSOPHER - Pass 1)
+| Goal | Metric | Target |
+|------|--------|--------|
+| Code Quality | CLASSic Score | > 0.8 |
+| Latency | Response Time | < 5000ms |
+| Rework | Revision Rate | < 15% |
+**Adjacent Opportunities:** [Optimization paths identified]
+---
+## 2. Architect Findings & Draft Plan
+| ID | Description | Impact | Resolution |
+|----|-------------|--------|------------|
+| ARCH-001 | ... | High | ... |
+| ARCH-002 | ... | Medium | ... |
+---
+## 3. Mechanic Validation & Findings
+| ARCH ID | Status | Correction |
+|---------|--------|------------|
+| ARCH-001 | Validated | None |
+| ARCH-002 | Modified | [Correction] |
+| MECH ID | Description | Impact |
+|---------|-------------|--------|
+| MECH-001 | ... | ... |
+---
+## 4. Conflict Resolutions
+| ID | Conflict | Resolution | Resolved By |
+|----|----------|------------|-------------|
+| C-001 | ... | ... | Auto/Philosopher |
+---
+## 5. Updated Plan (ARCHITECT - Pass 2)
+### Phase 1: [Component]
+- Task 1.1
+- Task 1.2
+### Phase 2: [Component]
+- Task 2.1
+---
+## 6. Final Validation (MECHANIC - Pass 3)
+- [ ] All ARCH findings addressed
+- [ ] All MECH findings addressed
+- [ ] Edge cases covered
+- [ ] Risk analysis complete
+---
+## 7. Achievement & Adjacents (PHILOSOPHER - Pass 3)
+| Goal | Status | Notes |
+|------|--------|-------|
+| Code Quality | ✓ | CLASSic 0.85 |
+| Latency | ✓ | 3200ms avg |
+**Final Adjacents:** [Future optimization opportunities]
+---
+## 8. Sign-off Summary
+| Pass | Architect | Mechanic | Philosopher |
+|------|-----------|----------|-------------|
+| 1 | ✓ | ✓ | ✓ |
+| 2 | ✓ | ✓ | [Triggered/Skipped] |
+| 3 | ✓ | ✓ | ✓ |
+Philosopher Trigger Conditions
+Condition	Threshold	Action
+Conflict count	> 2	Escalate to Philosopher
+Plan changes	> 30%	Philosopher alignment check
+Risk severity	High	Philosopher review
+Security impact	Any	Philosopher review
+Configuration for 3-Pass Workflow
+# replit.md configuration
+workflow.passes: 3
+workflow.maxCalls: 7
+philosopher.triggerThreshold: 0.3  # 30% change threshold
+philosopher.alwaysOnPass1: true
+philosopher.alwaysOnPass3: true
+jointValidation.enabled: true
+autoMerge.simpleConflicts: true
+Success Metrics
+Metric	Before	Target	Measurement
+AI Calls	10+	7	Per workflow
+Latency	8-12s	3-5s	CLASSic
+Rework	40%	<15%	Revision count
+Conflicts	Manual	Auto-merge	Resolution log
+Implementation Timeline
+Day	Task	Validation
+1	Implement Pass 1 flow	Philosopher → Architect → Mechanic
+1	Add joint resolution logic	Auto-merge test
+2	Implement Pass 2 with trigger	Threshold test
+2	Implement Pass 3 joint validation	Combined call test
+3	Full workflow test	7-call verification
+3	Metrics integration	CLASSic logging
+Document follows 3-Pass Optimized Workflow from @ai-coding-agents/cli v2.1
+
+---
+## Summary of Changes from v1.0
+| Aspect | v1.0 (4-Phase) | v2.1 (3-Pass) |
+|--------|----------------|---------------|
+| **Structure** | 4 sequential phases | 3 passes with joint calls |
+| **AI Calls** | 10+ | 7 total |
+| **Philosopher** | Skip for speed | Trigger-based (smarter) |
+| **Conflict Resolution** | Manual | Auto-merge + escalate |
+| **Final Validation** | Separate calls | Joint MECH + PHIL call |
+| **Output Format** | Freeform | Structured document |
+---
+### Questions Before I Write This to File:
+1. **Philosopher Trigger Threshold**: The attached uses "changes > threshold" - should this be 30% change in plan content, or a different metric?
+2. **Code Ninja Placement**: The attached structure doesn't include Code Ninja. Should Ninja be:
+   - A separate Pass 4 (after sign-off)?
+   - Invoked within Pass 3 after validation?
+   - Called separately post-workflow?
+3. **Joint Resolution Logic**: For auto-merge, what defines a "simple conflict"?
+   - Same finding, different wording → auto-merge
+   - Contradictory recommendations → escalate to Philosopher
+   - Is this the intended logic?
+4. **Adjacent Opportunities**: Should these be stored in the ML system for future learning, or just documented in output?
+Checkpoint made
+Update proposal for AI agent behavior optimization
+Worked for 1 minute
+1 - yes, if change is > 15%
+2 - good pickup - add as Invoked within Pass 3 after validation, and as last step before signoff
+3 - yes that sounds good
+4 - both
