@@ -1,0 +1,16 @@
+For cleaning and optimization, you should focus on removing unused dependencies, using production flags, and leveraging build-time optimizations like tree shaking and minification. 
+Cleaning Commands
+These commands help manage and clean up your node_modules and cache: 
+npm prune: This command removes "extraneous" packages, which are packages present in the node_modules folder but not listed in your package.json dependencies.
+To remove development dependencies in a production environment, use npm prune --production.
+rm -rf node_modules: To ensure a completely fresh start (especially when troubleshooting dependency issues), delete the node_modules folder and package-lock.json file, then run npm install.
+npm cache clean --force: This command deletes all data out of the npm cache folder. It is typically unnecessary for regular operation as npm's cache is self-healing, but it can help resolve persistent installation issues. 
+Optimization Strategies
+These steps primarily focus on reducing the final bundle size and improving performance:
+Separate dependencies and devDependencies: Ensure all packages required for your application to run in production are in dependencies, and build/testing tools are in devDependencies. When deploying, use npm install --production to only install the necessary packages.
+Analyze and remove unused dependencies: Use a tool like depcheck to identify libraries that are installed but not used in your project. Run it using npx depcheck, then manually uninstall the unused packages with npm uninstall <package-name>.
+Optimize imports (Tree Shaking): If you use a bundler like Webpack or Rollup, structure your code and imports to leverage tree shaking. This process automatically eliminates unused code from third-party libraries, significantly reducing your bundle size.
+Instead of import * as _ from 'lodash', use specific imports like import compact from 'lodash/compact'.
+Use minification and compression: Bundlers like Webpack automatically apply minification (using tools like Terser) in production mode. This removes unnecessary characters and shortens code without changing its functionality.
+Control published files: In your package.json file, use the "files" field to explicitly list only the directories and files that should be included when your package is published to the npm registry (e.g., "files": ["dist/", "src/"]). This prevents unnecessary files like tests or documentation from being included in other users' node_modules.
+Analyze module size: Use a CLI tool like cost-of-modules (run via npx cost-of-modules) to analyze the size impact of your dependencies and identify large packages that might be replaceable with lighter alternatives. 

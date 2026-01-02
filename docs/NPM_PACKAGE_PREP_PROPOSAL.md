@@ -1,0 +1,167 @@
+# NPM Package Preparation Proposal
+
+**Goal**: Clean, optimize, and validate the ai-coding-agents package before GitHub release.
+
+## Phase 1: Dependency Cleanup (2 min)
+
+### Commands
+```bash
+# Remove unused/extraneous packages
+npm prune
+
+# In production mode (removes devDependencies)
+npm prune --production
+
+# Clear npm cache if issues persist
+npm cache clean --force
+```
+
+### Dependency Audit
+```bash
+# Find unused dependencies
+npx depcheck
+
+# Analyze module sizes
+npx cost-of-modules
+
+# Remove identified unused packages
+npm uninstall <package-name>
+```
+
+## Phase 2: Package.json Optimization
+
+### Current Issues
+- Version still at 1.0.0 (should be 1.2.0)
+- Missing exports for new modules (router, schema, SDK, init)
+- Placeholder repository URL
+- No peer dependency for Express (optional)
+
+### Updated package.json
+```json
+{
+  "name": "ai-coding-agents",
+  "version": "1.2.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "AI-powered coding agents with dual-LLM reasoning, ML learning, and Express integration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zambam/ai-coding-agents"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    },
+    "./scanner": {
+      "import": "./dist/scanner.js",
+      "types": "./dist/scanner.d.ts"
+    },
+    "./router": {
+      "import": "./dist/express-router.js",
+      "types": "./dist/express-router.d.ts"
+    },
+    "./schema": {
+      "import": "./dist/drizzle-schema.js",
+      "types": "./dist/drizzle-schema.d.ts"
+    },
+    "./client": {
+      "import": "./dist/client-sdk.js",
+      "types": "./dist/client-sdk.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "bin": {
+    "ai-agents": "./dist/cli.js"
+  }
+}
+```
+
+## Phase 3: Build Optimization
+
+### Tree Shaking
+- Use specific imports instead of wildcard imports
+- Example: `import { Router } from 'express'` not `import * as express`
+
+### Minification
+- TypeScript compiler handles production output
+- Consider adding terser for additional minification (optional)
+
+### Files Field
+Current `files` array is correct:
+```json
+"files": ["dist", "templates"]
+```
+
+This excludes:
+- `src/` (source files)
+- `tests/`
+- `docs/`
+- Development configs
+
+## Phase 4: Validation Checklist
+
+### Pre-Build
+- [ ] Run `npx depcheck` - remove unused deps
+- [ ] Verify all source files in sync
+- [ ] Update version to 1.2.0
+- [ ] Fix repository URL
+
+### Build
+- [ ] Run `npm run build:package`
+- [ ] Verify `dist/` contains all modules
+- [ ] Check for TypeScript errors
+
+### Post-Build
+- [ ] Run `npm pack --dry-run` - verify package contents
+- [ ] Test CLI: `node dist/cli.js --help`
+- [ ] Verify exports resolve correctly
+
+## Phase 5: Quick Execution Script
+
+```bash
+#!/bin/bash
+# npm-package-prep.sh
+
+set -e
+
+echo "1. Cleaning..."
+npm prune
+npm cache clean --force
+
+echo "2. Checking for unused deps..."
+npx depcheck --skip-missing || true
+
+echo "3. Building package..."
+npm run build:package
+
+echo "4. Validating package..."
+npm pack --dry-run
+
+echo "5. Testing CLI..."
+node dist/cli.js --help
+
+echo "Package ready for GitHub push!"
+```
+
+## Estimated Time
+
+| Phase | Time |
+|-------|------|
+| Dependency cleanup | 2 min |
+| Package.json updates | 2 min |
+| Build & validate | 3 min |
+| **Total** | **~7 min** |
+
+## Approval
+
+- [ ] Proceed with quick prep (7 min)
+- [ ] Add tests for new modules (+10 min)
+- [ ] Skip - push as-is
