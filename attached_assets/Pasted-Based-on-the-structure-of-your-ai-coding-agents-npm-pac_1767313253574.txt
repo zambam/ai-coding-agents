@@ -1,0 +1,21 @@
+Based on the structure of your ai-coding-agents npm package (from its GitHub repo) and general Replit AI best practices (updated for 2026 trends like Fast mode and vibe coding), here are simple, quick-to-implement solutions. These focus on reducing complexity, speeding up workflows, and optimizing the Architect and Mechanic specifically. Since your package uses dual-LLM reasoning (GPT-4o and Grok), tweaks here target trade-offs between speed, accuracy, and resource use. Your SmartClimateAdvisor repo doesn't explicitly detail AI integration yet, so I'll assume you're importing the agents there—start by adding a basic import/setup script if not already done.
+Aim for 5-15 minute implementations per suggestion, using edits to replit.md, code snippets, or Replit UI toggles. Test on small tasks like "Document a climate API endpoint" or "Implement a simple temp converter" to verify.
+1. Simplify Configuration for Faster, Less Complex Behavior
+The package's complexity comes from reliability features like multi-path reasoning and critiques. Dial these down via replit.md or code for quicker runs, especially for Architect (design) and Mechanic (debugging).
+
+Edit replit.md for Global Params (5 mins):
+Add or update this section in your project's replit.md (create if missing). This overrides defaults without code changes, making agents leaner:text## Agent Configuration
+consistency.mode: fast  # Or "none" for max speed (skips voting, reduces latency by 50-70%)
+validationLevel: medium  # Or "low" for fewer checks (balances speed/accuracy; strict is slowest)
+enableSelfCritique: false  # Disable to skip reflection loops, speeding up by 20-30%
+enablePhilosopher: false  # Turn off for non-meta tasks; keeps workflows to 2-3 agents
+enableGrokSecondOpinion: false  # Skip Grok reviews for simpler, faster primary LLM use
+maxTokens: 2048  # Lower from 4096 to cut costs/latency; adjust up if outputs truncate
+temperature: 0.6  # Increase from 0.4 for more creative but quicker responses (less deterministic)
+##
+Code Standards
+TypeScript strict mode
+No any types
+Tests required for new functions
+Why it helps: Reduces overhead in Architect (fewer blueprint validations) and Mechanic (quicker diagnoses). For your 2-agent focus, this preps for Architect → Mechanic flows.
+Test: Restart Replit session and run a task; expect 30-50% faster execution.
