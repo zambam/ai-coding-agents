@@ -14,10 +14,23 @@ import {
   type InsertPromptVariant as SchemaInsertPromptVariant,
   type MemoryEntry as SchemaMemoryEntry,
   type InsertMemoryEntry as SchemaInsertMemoryEntry,
+  type AgentReport as SchemaAgentReport,
+  type InsertAgentReport as SchemaInsertAgentReport,
+  type ProjectGuidelines as SchemaProjectGuidelines,
+  type InsertProjectGuidelines as SchemaInsertProjectGuidelines,
+  type FailurePattern as SchemaFailurePattern,
+  type InsertFailurePattern as SchemaInsertFailurePattern,
+  type ExternalAgentType,
+  type FailureCategory,
+  type FailureSeverity,
+  type MonitorAnalytics,
   insertRunOutcomeSchema,
   insertHumanFeedbackSchema,
   insertPromptVariantSchema,
   insertMemoryEntrySchema,
+  insertAgentReportSchema,
+  insertProjectGuidelinesSchema,
+  insertFailurePatternSchema,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -29,12 +42,21 @@ export type PromptVariant = SchemaPromptVariant;
 export type InsertPromptVariant = SchemaInsertPromptVariant;
 export type MemoryEntry = SchemaMemoryEntry;
 export type InsertMemoryEntry = SchemaInsertMemoryEntry;
+export type AgentReport = SchemaAgentReport;
+export type InsertAgentReport = SchemaInsertAgentReport;
+export type ProjectGuidelines = SchemaProjectGuidelines;
+export type InsertProjectGuidelines = SchemaInsertProjectGuidelines;
+export type FailurePattern = SchemaFailurePattern;
+export type InsertFailurePattern = SchemaInsertFailurePattern;
 
 export { 
   insertRunOutcomeSchema, 
   insertHumanFeedbackSchema, 
   insertPromptVariantSchema, 
-  insertMemoryEntrySchema 
+  insertMemoryEntrySchema,
+  insertAgentReportSchema,
+  insertProjectGuidelinesSchema,
+  insertFailurePatternSchema,
 };
 
 export interface IStorage {
@@ -69,12 +91,38 @@ export interface IDataTelemetry {
   cleanupExpiredMemories(): Promise<number>;
 }
 
-export class MemStorage implements IStorage, IDataTelemetry {
+export interface IAgentMonitor {
+  createAgentReport(report: InsertAgentReport): Promise<AgentReport>;
+  getAgentReport(id: string): Promise<AgentReport | undefined>;
+  getAgentReportsByProject(projectId: string, limit?: number): Promise<AgentReport[]>;
+  getAgentReportsByCategory(category: FailureCategory, limit?: number): Promise<AgentReport[]>;
+  getAgentReportsWithFailures(projectId: string): Promise<AgentReport[]>;
+  cleanupOldReports(retentionDays: number): Promise<number>;
+
+  createProjectGuidelines(guidelines: InsertProjectGuidelines): Promise<ProjectGuidelines>;
+  getProjectGuidelines(projectId: string): Promise<ProjectGuidelines | undefined>;
+  updateProjectGuidelines(projectId: string, updates: Partial<InsertProjectGuidelines>): Promise<ProjectGuidelines | undefined>;
+
+  createFailurePattern(pattern: InsertFailurePattern): Promise<FailurePattern>;
+  getFailurePattern(id: string): Promise<FailurePattern | undefined>;
+  getFailurePatternsByProject(projectId: string): Promise<FailurePattern[]>;
+  getFailurePatternsByCategory(category: FailureCategory): Promise<FailurePattern[]>;
+  getGlobalPatterns(): Promise<FailurePattern[]>;
+  incrementPatternOccurrence(id: string): Promise<FailurePattern | undefined>;
+  updateFailurePattern(id: string, updates: Partial<InsertFailurePattern>): Promise<FailurePattern | undefined>;
+
+  getMonitorAnalytics(projectId?: string): Promise<MonitorAnalytics>;
+}
+
+export class MemStorage implements IStorage, IDataTelemetry, IAgentMonitor {
   private users: Map<string, User>;
   private runOutcomes: Map<string, RunOutcome>;
   private humanFeedbackStore: Map<string, HumanFeedback>;
   private promptVariants: Map<string, PromptVariant>;
   private memoryEntries: Map<string, MemoryEntry>;
+  private agentReports: Map<string, AgentReport>;
+  private projectGuidelinesStore: Map<string, ProjectGuidelines>;
+  private failurePatternsStore: Map<string, FailurePattern>;
 
   constructor() {
     this.users = new Map();
@@ -82,6 +130,9 @@ export class MemStorage implements IStorage, IDataTelemetry {
     this.humanFeedbackStore = new Map();
     this.promptVariants = new Map();
     this.memoryEntries = new Map();
+    this.agentReports = new Map();
+    this.projectGuidelinesStore = new Map();
+    this.failurePatternsStore = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -352,6 +403,294 @@ export class MemStorage implements IStorage, IDataTelemetry {
       deleted++;
     }
     return deleted;
+  }
+
+  async createAgentReport(report: InsertAgentReport): Promise<AgentReport> {
+    const id = randomUUID();
+    const agentReport: AgentReport = {
+      id,
+      projectId: report.projectId,
+      externalAgent: report.externalAgent as ExternalAgentType,
+      sessionId: report.sessionId ?? null,
+      action: report.action,
+      codeGenerated: report.codeGenerated ?? null,
+      codeAccepted: report.codeAccepted ?? null,
+      humanCorrection: report.humanCorrection ?? null,
+      errorMessage: report.errorMessage ?? null,
+      failureCategory: (report.failureCategory as FailureCategory) ?? null,
+      failureSeverity: (report.failureSeverity as FailureSeverity) ?? null,
+      filePath: report.filePath ?? null,
+      language: report.language ?? null,
+      context: report.context ?? null,
+      createdAt: new Date(),
+    };
+    this.agentReports.set(id, agentReport);
+    return agentReport;
+  }
+
+  async getAgentReport(id: string): Promise<AgentReport | undefined> {
+    return this.agentReports.get(id);
+  }
+
+  async getAgentReportsByProject(projectId: string, limit = 100): Promise<AgentReport[]> {
+    const reports: AgentReport[] = [];
+    this.agentReports.forEach((r) => {
+      if (r.projectId === projectId) {
+        reports.push(r);
+      }
+    });
+    return reports
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async getAgentReportsByCategory(category: FailureCategory, limit = 100): Promise<AgentReport[]> {
+    const reports: AgentReport[] = [];
+    this.agentReports.forEach((r) => {
+      if (r.failureCategory === category) {
+        reports.push(r);
+      }
+    });
+    return reports
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async getAgentReportsWithFailures(projectId: string): Promise<AgentReport[]> {
+    const reports: AgentReport[] = [];
+    this.agentReports.forEach((r) => {
+      if (r.projectId === projectId && r.failureCategory) {
+        reports.push(r);
+      }
+    });
+    return reports.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async cleanupOldReports(retentionDays: number): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - retentionDays);
+    let deleted = 0;
+    const toDelete: string[] = [];
+    this.agentReports.forEach((report, id) => {
+      if (report.createdAt < cutoff) {
+        toDelete.push(id);
+      }
+    });
+    for (const id of toDelete) {
+      this.agentReports.delete(id);
+      deleted++;
+    }
+    return deleted;
+  }
+
+  async createProjectGuidelines(guidelines: InsertProjectGuidelines): Promise<ProjectGuidelines> {
+    const id = randomUUID();
+    const now = new Date();
+    const projectGuidelines: ProjectGuidelines = {
+      id,
+      projectId: guidelines.projectId,
+      rulesMarkdown: guidelines.rulesMarkdown,
+      ruleCount: guidelines.ruleCount,
+      confidence: guidelines.confidence,
+      observationCount: guidelines.observationCount,
+      enabledCategories: guidelines.enabledCategories ?? null,
+      crossProjectLearning: guidelines.crossProjectLearning ?? false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.projectGuidelinesStore.set(guidelines.projectId, projectGuidelines);
+    return projectGuidelines;
+  }
+
+  async getProjectGuidelines(projectId: string): Promise<ProjectGuidelines | undefined> {
+    return this.projectGuidelinesStore.get(projectId);
+  }
+
+  async updateProjectGuidelines(projectId: string, updates: Partial<InsertProjectGuidelines>): Promise<ProjectGuidelines | undefined> {
+    const existing = this.projectGuidelinesStore.get(projectId);
+    if (!existing) return undefined;
+    const updated: ProjectGuidelines = {
+      ...existing,
+      rulesMarkdown: updates.rulesMarkdown ?? existing.rulesMarkdown,
+      ruleCount: updates.ruleCount ?? existing.ruleCount,
+      confidence: updates.confidence ?? existing.confidence,
+      observationCount: updates.observationCount ?? existing.observationCount,
+      enabledCategories: updates.enabledCategories !== undefined ? updates.enabledCategories ?? null : existing.enabledCategories,
+      crossProjectLearning: updates.crossProjectLearning ?? existing.crossProjectLearning,
+      updatedAt: new Date(),
+    };
+    this.projectGuidelinesStore.set(projectId, updated);
+    return updated;
+  }
+
+  async createFailurePattern(pattern: InsertFailurePattern): Promise<FailurePattern> {
+    const id = randomUUID();
+    const now = new Date();
+    const failurePattern: FailurePattern = {
+      id,
+      projectId: pattern.projectId ?? null,
+      category: pattern.category as FailureCategory,
+      pattern: pattern.pattern,
+      occurrences: pattern.occurrences ?? 1,
+      exampleCodes: pattern.exampleCodes ?? null,
+      exampleCorrections: pattern.exampleCorrections ?? null,
+      suggestedRule: pattern.suggestedRule ?? null,
+      confidence: pattern.confidence ?? null,
+      isGlobal: pattern.isGlobal ?? false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.failurePatternsStore.set(id, failurePattern);
+    return failurePattern;
+  }
+
+  async getFailurePattern(id: string): Promise<FailurePattern | undefined> {
+    return this.failurePatternsStore.get(id);
+  }
+
+  async getFailurePatternsByProject(projectId: string): Promise<FailurePattern[]> {
+    const patterns: FailurePattern[] = [];
+    this.failurePatternsStore.forEach((p) => {
+      if (p.projectId === projectId) {
+        patterns.push(p);
+      }
+    });
+    return patterns.sort((a, b) => b.occurrences - a.occurrences);
+  }
+
+  async getFailurePatternsByCategory(category: FailureCategory): Promise<FailurePattern[]> {
+    const patterns: FailurePattern[] = [];
+    this.failurePatternsStore.forEach((p) => {
+      if (p.category === category) {
+        patterns.push(p);
+      }
+    });
+    return patterns.sort((a, b) => b.occurrences - a.occurrences);
+  }
+
+  async getGlobalPatterns(): Promise<FailurePattern[]> {
+    const patterns: FailurePattern[] = [];
+    this.failurePatternsStore.forEach((p) => {
+      if (p.isGlobal) {
+        patterns.push(p);
+      }
+    });
+    return patterns.sort((a, b) => b.occurrences - a.occurrences);
+  }
+
+  async incrementPatternOccurrence(id: string): Promise<FailurePattern | undefined> {
+    const existing = this.failurePatternsStore.get(id);
+    if (!existing) return undefined;
+    const updated: FailurePattern = {
+      ...existing,
+      occurrences: existing.occurrences + 1,
+      updatedAt: new Date(),
+    };
+    this.failurePatternsStore.set(id, updated);
+    return updated;
+  }
+
+  async updateFailurePattern(id: string, updates: Partial<InsertFailurePattern>): Promise<FailurePattern | undefined> {
+    const existing = this.failurePatternsStore.get(id);
+    if (!existing) return undefined;
+    const updated: FailurePattern = {
+      ...existing,
+      projectId: updates.projectId !== undefined ? updates.projectId ?? null : existing.projectId,
+      category: (updates.category ?? existing.category) as FailureCategory,
+      pattern: updates.pattern ?? existing.pattern,
+      occurrences: updates.occurrences ?? existing.occurrences,
+      exampleCodes: updates.exampleCodes !== undefined ? updates.exampleCodes ?? null : existing.exampleCodes,
+      exampleCorrections: updates.exampleCorrections !== undefined ? updates.exampleCorrections ?? null : existing.exampleCorrections,
+      suggestedRule: updates.suggestedRule !== undefined ? updates.suggestedRule ?? null : existing.suggestedRule,
+      confidence: updates.confidence !== undefined ? updates.confidence ?? null : existing.confidence,
+      isGlobal: updates.isGlobal ?? existing.isGlobal,
+      updatedAt: new Date(),
+    };
+    this.failurePatternsStore.set(id, updated);
+    return updated;
+  }
+
+  async getMonitorAnalytics(projectId?: string): Promise<MonitorAnalytics> {
+    const reports: AgentReport[] = [];
+    this.agentReports.forEach((r) => {
+      if (!projectId || r.projectId === projectId) {
+        reports.push(r);
+      }
+    });
+
+    const failuresByCategory: Record<FailureCategory, number> = {
+      security_gap: 0,
+      logic_error: 0,
+      context_blindness: 0,
+      outdated_api: 0,
+      missing_edge_case: 0,
+      poor_readability: 0,
+      broke_existing: 0,
+      hallucinated_code: 0,
+    };
+
+    const failuresByAgent: Record<ExternalAgentType, number> = {
+      replit_agent: 0,
+      cursor: 0,
+      copilot: 0,
+      claude_code: 0,
+      windsurf: 0,
+      aider: 0,
+      continue: 0,
+      cody: 0,
+      unknown: 0,
+    };
+
+    const failuresBySeverity: Record<FailureSeverity, number> = {
+      low: 0,
+      medium: 0,
+      high: 0,
+      critical: 0,
+    };
+
+    const dateCounts: Record<string, number> = {};
+
+    reports.forEach((r) => {
+      if (r.failureCategory) {
+        failuresByCategory[r.failureCategory]++;
+        failuresByAgent[r.externalAgent]++;
+        if (r.failureSeverity) {
+          failuresBySeverity[r.failureSeverity]++;
+        }
+      }
+      const dateKey = r.createdAt.toISOString().split("T")[0];
+      dateCounts[dateKey] = (dateCounts[dateKey] || 0) + 1;
+    });
+
+    const patterns: FailurePattern[] = [];
+    this.failurePatternsStore.forEach((p) => {
+      if (!projectId || p.projectId === projectId || p.isGlobal) {
+        patterns.push(p);
+      }
+    });
+
+    const topPatterns = patterns
+      .sort((a, b) => b.occurrences - a.occurrences)
+      .slice(0, 10)
+      .map((p) => ({
+        pattern: p.pattern,
+        occurrences: p.occurrences,
+        category: p.category,
+      }));
+
+    const recentTrend = Object.entries(dateCounts)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-30)
+      .map(([date, count]) => ({ date, count }));
+
+    return {
+      totalReports: reports.length,
+      failuresByCategory,
+      failuresByAgent,
+      failuresBySeverity,
+      topPatterns,
+      recentTrend,
+    };
   }
 }
 

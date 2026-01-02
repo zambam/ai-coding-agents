@@ -305,3 +305,109 @@ export const insertMemoryEntrySchema = createInsertSchema(memoryEntries).omit({
 });
 export type InsertMemoryEntry = z.infer<typeof insertMemoryEntrySchema>;
 export type MemoryEntry = typeof memoryEntries.$inferSelect;
+
+export const EXTERNAL_AGENT_TYPES = [
+  "replit_agent",
+  "cursor",
+  "copilot",
+  "claude_code",
+  "windsurf",
+  "aider",
+  "continue",
+  "cody",
+  "unknown",
+] as const;
+export type ExternalAgentType = typeof EXTERNAL_AGENT_TYPES[number];
+
+export const FAILURE_CATEGORIES = [
+  "security_gap",
+  "logic_error",
+  "context_blindness",
+  "outdated_api",
+  "missing_edge_case",
+  "poor_readability",
+  "broke_existing",
+  "hallucinated_code",
+] as const;
+export type FailureCategory = typeof FAILURE_CATEGORIES[number];
+
+export const FAILURE_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export type FailureSeverity = typeof FAILURE_SEVERITIES[number];
+
+export const agentReports = pgTable("agent_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: text("project_id").notNull(),
+  externalAgent: text("external_agent").notNull().$type<ExternalAgentType>(),
+  sessionId: text("session_id"),
+  action: text("action").notNull(),
+  codeGenerated: text("code_generated"),
+  codeAccepted: boolean("code_accepted"),
+  humanCorrection: text("human_correction"),
+  errorMessage: text("error_message"),
+  failureCategory: text("failure_category").$type<FailureCategory>(),
+  failureSeverity: text("failure_severity").$type<FailureSeverity>(),
+  filePath: text("file_path"),
+  language: text("language"),
+  context: jsonb("context"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertAgentReportSchema = createInsertSchema(agentReports).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAgentReport = z.infer<typeof insertAgentReportSchema>;
+export type AgentReport = typeof agentReports.$inferSelect;
+
+export const projectGuidelines = pgTable("project_guidelines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: text("project_id").notNull().unique(),
+  rulesMarkdown: text("rules_markdown").notNull(),
+  ruleCount: integer("rule_count").notNull(),
+  confidence: real("confidence").notNull(),
+  observationCount: integer("observation_count").notNull(),
+  enabledCategories: text("enabled_categories").array(),
+  crossProjectLearning: boolean("cross_project_learning").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertProjectGuidelinesSchema = createInsertSchema(projectGuidelines).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertProjectGuidelines = z.infer<typeof insertProjectGuidelinesSchema>;
+export type ProjectGuidelines = typeof projectGuidelines.$inferSelect;
+
+export const failurePatterns = pgTable("failure_patterns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: text("project_id"),
+  category: text("category").notNull().$type<FailureCategory>(),
+  pattern: text("pattern").notNull(),
+  occurrences: integer("occurrences").notNull().default(1),
+  exampleCodes: text("example_codes").array(),
+  exampleCorrections: text("example_corrections").array(),
+  suggestedRule: text("suggested_rule"),
+  confidence: real("confidence"),
+  isGlobal: boolean("is_global").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertFailurePatternSchema = createInsertSchema(failurePatterns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertFailurePattern = z.infer<typeof insertFailurePatternSchema>;
+export type FailurePattern = typeof failurePatterns.$inferSelect;
+
+export interface MonitorAnalytics {
+  totalReports: number;
+  failuresByCategory: Record<FailureCategory, number>;
+  failuresByAgent: Record<ExternalAgentType, number>;
+  failuresBySeverity: Record<FailureSeverity, number>;
+  topPatterns: Array<{ pattern: string; occurrences: number; category: FailureCategory }>;
+  recentTrend: Array<{ date: string; count: number }>;
+}

@@ -2,8 +2,9 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage, insertRunOutcomeSchema, insertHumanFeedbackSchema, type InsertRunOutcome } from "./storage";
 import { Orchestrator } from "./agents";
-import type { AgentType, AgentConfig, ReasoningStep } from "@shared/schema";
-import { DEFAULT_AGENT_CONFIG } from "@shared/schema";
+import type { AgentType, AgentConfig, ReasoningStep, FailureCategory } from "@shared/schema";
+import { DEFAULT_AGENT_CONFIG, FAILURE_CATEGORIES } from "@shared/schema";
+import { ReportProcessor, GuidelinesGenerator, AnalyticsService, externalReportSchema } from "./monitor";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -591,6 +592,220 @@ export async function registerRoutes(
       console.error("Error listing issues:", error);
       res.status(500).json({
         error: "Failed to list issues",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  const reportProcessor = new ReportProcessor(storage);
+  const guidelinesGenerator = new GuidelinesGenerator(storage);
+  const analyticsService = new AnalyticsService(storage);
+
+  app.post("/api/agents/external/report", async (req: Request, res: Response) => {
+    try {
+      const parsed = externalReportSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid report data", 
+          details: parsed.error.issues 
+        });
+      }
+
+      const result = await reportProcessor.processReport(parsed.data);
+      res.status(201).json({
+        success: true,
+        reportId: result.report.id,
+        detectedFailure: result.detectedFailure,
+        failureCategory: result.failureCategory,
+        failureSeverity: result.failureSeverity,
+      });
+    } catch (error) {
+      console.error("Error processing external report:", error);
+      res.status(500).json({
+        error: "Failed to process report",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/agents/guidelines/:projectId", async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const guidelines = await storage.getProjectGuidelines(projectId);
+
+      if (!guidelines) {
+        return res.status(404).json({ 
+          error: "Guidelines not found", 
+          message: "No guidelines generated for this project yet" 
+        });
+      }
+
+      res.json({
+        success: true,
+        guidelines: {
+          projectId: guidelines.projectId,
+          rulesMarkdown: guidelines.rulesMarkdown,
+          ruleCount: guidelines.ruleCount,
+          confidence: guidelines.confidence,
+          observationCount: guidelines.observationCount,
+          updatedAt: guidelines.updatedAt,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching guidelines:", error);
+      res.status(500).json({
+        error: "Failed to fetch guidelines",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.post("/api/agents/guidelines/generate", async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.body as { projectId: string };
+      
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId is required" });
+      }
+
+      const result = await guidelinesGenerator.generateGuidelines(projectId);
+      res.json({
+        success: true,
+        guidelines: {
+          projectId: result.guidelines.projectId,
+          rulesMarkdown: result.guidelines.rulesMarkdown,
+          ruleCount: result.guidelines.ruleCount,
+          confidence: result.guidelines.confidence,
+          observationCount: result.guidelines.observationCount,
+        },
+        rulesGenerated: result.rules.length,
+        categoryCoverage: result.categoryCoverage,
+      });
+    } catch (error) {
+      console.error("Error generating guidelines:", error);
+      res.status(500).json({
+        error: "Failed to generate guidelines",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/agents/monitor/analytics", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string | undefined;
+      const analytics = await analyticsService.getAnalytics(projectId);
+      const healthScore = analyticsService.calculateHealthScore(analytics);
+
+      res.json({
+        success: true,
+        analytics,
+        healthScore,
+        projectId: projectId || "all",
+      });
+    } catch (error) {
+      console.error("Error fetching monitor analytics:", error);
+      res.status(500).json({
+        error: "Failed to fetch analytics",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/agents/monitor/analytics/export", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const format = (req.query.format as "json" | "csv") || "json";
+
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId query parameter is required" });
+      }
+
+      const exportData = await analyticsService.exportData(projectId, format);
+
+      if (format === "csv") {
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename="${exportData.filename}"`);
+        return res.send(exportData.content);
+      }
+
+      res.json({
+        success: true,
+        format: exportData.format,
+        filename: exportData.filename,
+        data: JSON.parse(exportData.content),
+      });
+    } catch (error) {
+      console.error("Error exporting analytics:", error);
+      res.status(500).json({
+        error: "Failed to export analytics",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/agents/monitor/trends", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const days = parseInt(req.query.days as string) || 30;
+
+      if (!projectId) {
+        return res.status(400).json({ error: "projectId query parameter is required" });
+      }
+
+      const trends = await analyticsService.getTrends(projectId, days);
+      res.json({
+        success: true,
+        projectId,
+        days,
+        trends,
+      });
+    } catch (error) {
+      console.error("Error fetching trends:", error);
+      res.status(500).json({
+        error: "Failed to fetch trends",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/agents/monitor/patterns", async (req: Request, res: Response) => {
+    try {
+      const projectId = req.query.projectId as string | undefined;
+      const category = req.query.category as FailureCategory | undefined;
+
+      if (category && !FAILURE_CATEGORIES.includes(category)) {
+        return res.status(400).json({ 
+          error: "Invalid category", 
+          validCategories: FAILURE_CATEGORIES 
+        });
+      }
+
+      let patterns;
+      if (category) {
+        patterns = await storage.getFailurePatternsByCategory(category);
+      } else if (projectId) {
+        patterns = await storage.getFailurePatternsByProject(projectId);
+      } else {
+        patterns = await storage.getGlobalPatterns();
+      }
+
+      res.json({
+        success: true,
+        patterns: patterns.map(p => ({
+          id: p.id,
+          category: p.category,
+          pattern: p.pattern,
+          occurrences: p.occurrences,
+          suggestedRule: p.suggestedRule,
+          confidence: p.confidence,
+          isGlobal: p.isGlobal,
+        })),
+        count: patterns.length,
+      });
+    } catch (error) {
+      console.error("Error fetching patterns:", error);
+      res.status(500).json({
+        error: "Failed to fetch patterns",
         message: error instanceof Error ? error.message : "Unknown error",
       });
     }

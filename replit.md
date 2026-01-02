@@ -88,17 +88,30 @@ Before any commit:
 
 ## Recent Changes
 
-- **AI Agent Monitor Implementation Plan Created**
-  - Detailed technical implementation plan with API specs, database schema, sequencing
-  - Follows 3-Pass workflow (8 AI calls) with Code Ninja in Pass 3 after validation
-  - Full module specifications: ReportProcessor, FailureDetector, GuidelinesGenerator, Analytics
-  - Database tables: agentReports, projectGuidelines, failurePatterns
-  - API endpoints: POST /api/agents/external/report, GET /api/agents/guidelines/:id, etc.
-  - CLI commands: report, generate-rules, analytics
-  - ML integration with OutcomeLearner, MemoryManager, PromptOptimizer extensions
-  - DAG implementation sequence with 5 phases and regression gates
-  - Documents: docs/AI_AGENT_MONITOR_PROPOSAL.md, docs/AI_AGENT_MONITOR_IMPLEMENTATION_PLAN.md (pending review)
-  - **Configuration Finalized**: No API auth, 60-day retention, opt-in cross-project learning, 5-min debounce, 3+ failure threshold
+- **AI Agent Monitor Implementation COMPLETE (Phases 1-5)**
+  - **Phase 1**: Database schema added (agentReports, projectGuidelines, failurePatterns tables) in shared/schema.ts
+    - 8 failure categories: security_gap, logic_error, context_blindness, outdated_api, missing_edge_case, poor_readability, broke_existing, hallucinated_code
+    - 9 external agent types: replit_agent, cursor, copilot, claude_code, windsurf, aider, continue, cody, unknown
+    - IAgentMonitor interface and full MemStorage implementation in server/storage.ts
+  - **Phase 2**: Core modules implemented in server/monitor/
+    - ReportProcessor: Handles incoming reports with auto-detection via FailureDetector
+    - FailureDetector: Analyzes code/errors/diffs with pattern matching for 8 categories
+    - GuidelinesGenerator: Creates AGENT_RULES.md with confidence scoring
+    - AnalyticsService: Provides metrics, trends, exports (CSV/JSON)
+  - **Phase 3**: 7 API endpoints added in server/routes.ts
+    - POST /api/agents/external/report - Receive external agent reports
+    - GET /api/agents/guidelines/:projectId - Get project guidelines
+    - POST /api/agents/guidelines/generate - Force regenerate guidelines
+    - GET /api/agents/monitor/analytics - Get failure analytics
+    - GET /api/agents/monitor/analytics/export - Export CSV/JSON
+    - GET /api/agents/monitor/trends - Get failure trends
+    - GET /api/agents/monitor/patterns - Get failure patterns
+  - **Phase 4**: MonitorLearningIntegration for ML system integration
+    - Bridges monitor system with OutcomeLearner/MemoryManager
+    - Cross-project insights with opt-in learning
+    - Agent comparison and effectiveness tracking
+  - **Phase 5**: 57 monitor tests added (341 total tests passing)
+  - **Configuration**: No API auth, 60-day retention, opt-in cross-project learning, 5-min debounce, 3+ failure threshold
 
 - **GitHub Integration Added**
   - PR review: Analyze pull requests with Architect, Mechanic, and Code Ninja agents
@@ -188,11 +201,17 @@ Before any commit:
 
 - `ai-agents invoke <agent> <prompt>` - Invoke an AI agent (architect, mechanic, ninja, philosopher)
 - `ai-agents scan <path>` - Scan code for fake/placeholder data, security issues, PII
+- `ai-agents report <projectId>` - Submit an external agent report
+- `ai-agents generate-rules <projectId>` - Generate AGENT_RULES.md for a project
+- `ai-agents analytics [projectId]` - View failure analytics
 - `ai-agents help` - Show help message
 
 Options:
 - `--strict` - Use strict configuration for invoke, or fail on warnings for scan
 - `--ext <extensions>` - File extensions to scan (comma-separated)
+- `--agent <type>` - External agent type (replit_agent, cursor, copilot, claude_code, etc.)
+- `--output <file>` - Output file path for generate-rules
+- `--json` - Output analytics as JSON
 
 ## Workflow Scripts
 

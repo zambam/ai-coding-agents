@@ -4,8 +4,10 @@ import { FakeDataScanner, type ScanResult } from "./scanner";
 import { createLogger } from "./logger";
 import { DEFAULT_AGENT_CONFIG, STRICT_AGENT_CONFIG } from "./constants";
 import type { AgentType, AgentConfig } from "./types";
+import type { ExternalAgentType } from "../shared/schema";
 
 const logger = createLogger({ level: "info" });
+const API_BASE_URL = process.env.AI_AGENTS_API_URL || "http://localhost:5000";
 
 interface InvokeOptions {
   agent: AgentType;
@@ -18,6 +20,27 @@ interface ScanOptions {
   path: string;
   extensions?: string[];
   strict?: boolean;
+}
+
+interface ReportOptions {
+  projectId: string;
+  agent: ExternalAgentType;
+  action: string;
+  codeGenerated?: string;
+  codeAccepted?: boolean;
+  humanCorrection?: string;
+  errorMessage?: string;
+}
+
+interface AnalyticsOptions {
+  projectId?: string;
+  format?: "json" | "csv";
+  export?: boolean;
+}
+
+interface GenerateRulesOptions {
+  projectId: string;
+  output?: string;
 }
 
 interface CommandResult {
@@ -172,6 +195,147 @@ function printScanResult(result: ScanResult): void {
   console.log(`Errors: ${errors}, Warnings: ${warnings}`);
 }
 
+export async function submitReport(options: ReportOptions): Promise<CommandResult> {
+  logger.info(`Submitting report for project: ${options.projectId}`);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agents/external/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: options.projectId,
+        externalAgent: options.agent,
+        action: options.action,
+        codeGenerated: options.codeGenerated,
+        codeAccepted: options.codeAccepted,
+        humanCorrection: options.humanCorrection,
+        errorMessage: options.errorMessage,
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log("\n=== Report Submitted ===\n");
+    console.log("Report ID:", result.reportId);
+    console.log("Failure Detected:", result.detectedFailure ? "Yes" : "No");
+    if (result.failureCategory) {
+      console.log("Category:", result.failureCategory);
+      console.log("Severity:", result.failureSeverity);
+    }
+    
+    return { success: true, exitCode: 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Report submission failed: ${message}`);
+    console.error("Error:", message);
+    return { success: false, exitCode: 1, message };
+  }
+}
+
+export async function generateRules(options: GenerateRulesOptions): Promise<CommandResult> {
+  logger.info(`Generating rules for project: ${options.projectId}`);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agents/guidelines/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: options.projectId }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log("\n=== Guidelines Generated ===\n");
+    console.log("Project:", result.guidelines.projectId);
+    console.log("Rules Generated:", result.rulesGenerated);
+    console.log("Confidence:", (result.guidelines.confidence * 100).toFixed(1) + "%");
+    console.log("Observations:", result.guidelines.observationCount);
+    
+    if (options.output) {
+      const fs = await import("fs");
+      fs.writeFileSync(options.output, result.guidelines.rulesMarkdown);
+      console.log(`\nRules written to: ${options.output}`);
+    } else {
+      console.log("\n--- AGENT_RULES.md ---\n");
+      console.log(result.guidelines.rulesMarkdown);
+    }
+    
+    return { success: true, exitCode: 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Rules generation failed: ${message}`);
+    console.error("Error:", message);
+    return { success: false, exitCode: 1, message };
+  }
+}
+
+export async function viewAnalytics(options: AnalyticsOptions): Promise<CommandResult> {
+  logger.info("Fetching analytics");
+  
+  try {
+    const url = new URL(`${API_BASE_URL}/api/agents/monitor/analytics`);
+    if (options.projectId) {
+      url.searchParams.set("projectId", options.projectId);
+    }
+    
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (options.format === "json" || options.export) {
+      console.log(JSON.stringify(result, null, 2));
+      return { success: true, exitCode: 0 };
+    }
+    
+    console.log("\n=== Monitor Analytics ===\n");
+    console.log("Project:", result.projectId);
+    console.log("Total Reports:", result.analytics.totalReports);
+    console.log("Health Score:", result.healthScore.toFixed(1) + "%");
+    
+    console.log("\n--- Failures by Category ---");
+    for (const [category, count] of Object.entries(result.analytics.failuresByCategory)) {
+      if (count as number > 0) {
+        console.log(`  ${category}: ${count}`);
+      }
+    }
+    
+    console.log("\n--- Failures by Severity ---");
+    for (const [severity, count] of Object.entries(result.analytics.failuresBySeverity)) {
+      if (count as number > 0) {
+        console.log(`  ${severity}: ${count}`);
+      }
+    }
+    
+    if (result.analytics.topPatterns.length > 0) {
+      console.log("\n--- Top Patterns ---");
+      result.analytics.topPatterns.slice(0, 5).forEach((p: { pattern: string; occurrences: number; category: string }) => {
+        console.log(`  ${p.category}: ${p.pattern} (${p.occurrences}x)`);
+      });
+    }
+    
+    return { success: true, exitCode: 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Analytics fetch failed: ${message}`);
+    console.error("Error:", message);
+    return { success: false, exitCode: 1, message };
+  }
+}
+
 function printHelp(): void {
   console.log(`
 AI Coding Agents CLI
@@ -182,6 +346,9 @@ Usage:
 Commands:
   invoke <agent> <prompt>    Invoke an AI agent
   scan <path>                Scan code for fake/placeholder data
+  report <projectId>         Submit an external agent report
+  generate-rules <projectId> Generate AGENT_RULES.md for a project
+  analytics [projectId]      View failure analytics
   help                       Show this help message
 
 Options for 'invoke':
@@ -192,15 +359,33 @@ Options for 'scan':
   --strict                   Fail on warnings (not just errors)
   --ext <extensions>         File extensions to scan (comma-separated)
 
+Options for 'report':
+  --agent <type>             External agent: replit_agent, cursor, copilot, claude_code, etc.
+  --action <action>          Action performed (e.g., "code_generation")
+  --code <code>              Generated code (optional)
+  --accepted                 Whether code was accepted
+  --correction <code>        Human correction (optional)
+  --error <message>          Error message (optional)
+
+Options for 'generate-rules':
+  --output <file>            Output file path (default: prints to stdout)
+
+Options for 'analytics':
+  --json                     Output as JSON
+  --export                   Export data (requires projectId)
+
 Environment Variables:
   OPENAI_API_KEY             Required for invoke command
   XAI_API_KEY                Optional for Grok second opinions
+  AI_AGENTS_API_URL          API server URL (default: http://localhost:5000)
 
 Examples:
   ai-agents invoke architect "Design a REST API for user management"
   ai-agents invoke mechanic "Debug this authentication issue" --strict
   ai-agents scan ./src --ext .ts,.tsx
-  ai-agents scan ./server --strict
+  ai-agents report my-project --agent cursor --action code_gen --accepted
+  ai-agents generate-rules my-project --output AGENT_RULES.md
+  ai-agents analytics my-project --json
 `);
 }
 
@@ -268,6 +453,81 @@ export async function parseArgs(args: string[]): Promise<CommandResult> {
     }
     
     return runScan({ path, strict, extensions });
+  }
+  
+  if (command === "report") {
+    const projectId = args[1];
+    if (!projectId) {
+      console.error("Error: projectId is required");
+      return { success: false, exitCode: 1 };
+    }
+    
+    let agent: ExternalAgentType = "replit_agent";
+    let action = "code_generation";
+    let codeGenerated: string | undefined;
+    let codeAccepted = false;
+    let humanCorrection: string | undefined;
+    let errorMessage: string | undefined;
+    
+    for (let i = 2; i < args.length; i++) {
+      if (args[i] === "--agent" && args[i + 1]) {
+        agent = args[i + 1] as ExternalAgentType;
+        i++;
+      } else if (args[i] === "--action" && args[i + 1]) {
+        action = args[i + 1];
+        i++;
+      } else if (args[i] === "--code" && args[i + 1]) {
+        codeGenerated = args[i + 1];
+        i++;
+      } else if (args[i] === "--accepted") {
+        codeAccepted = true;
+      } else if (args[i] === "--correction" && args[i + 1]) {
+        humanCorrection = args[i + 1];
+        i++;
+      } else if (args[i] === "--error" && args[i + 1]) {
+        errorMessage = args[i + 1];
+        i++;
+      }
+    }
+    
+    return submitReport({ projectId, agent, action, codeGenerated, codeAccepted, humanCorrection, errorMessage });
+  }
+  
+  if (command === "generate-rules") {
+    const projectId = args[1];
+    if (!projectId) {
+      console.error("Error: projectId is required");
+      return { success: false, exitCode: 1 };
+    }
+    
+    let output: string | undefined;
+    
+    for (let i = 2; i < args.length; i++) {
+      if (args[i] === "--output" && args[i + 1]) {
+        output = args[i + 1];
+        i++;
+      }
+    }
+    
+    return generateRules({ projectId, output });
+  }
+  
+  if (command === "analytics") {
+    const projectId = args[1];
+    let format: "json" | "csv" | undefined;
+    let exportData = false;
+    
+    for (let i = 2; i < args.length; i++) {
+      if (args[i] === "--json") {
+        format = "json";
+      } else if (args[i] === "--csv") {
+        format = "csv";
+      } else if (args[i] === "--export") {
+        exportData = true;
+      }
+    }
+    
+    return viewAnalytics({ projectId, format, export: exportData });
   }
   
   console.error(`Error: Unknown command '${command}'`);
