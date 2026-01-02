@@ -1,0 +1,45 @@
+quick way to simulate the installation of a npm file for debugging & error checking
+The quickest and most common ways to simulate an npm package installation locally for debugging are using npm link (for active development with real-time updates) and npm pack (for a realistic simulation of the actual publish/install process).
+Method 1: npm link (Best for active development/debugging)
+npm link creates a symbolic link (symlink) to your local package, allowing you to work on it and test it in a consuming project without publishing it. Changes in your package are reflected immediately in the test project. 
+In your package directory:
+bash
+cd /path/to/your/package
+npm link
+Use code with caution.
+
+This registers your package globally on your local machine.
+In your test project directory:
+bash
+cd /path/to/your/test-project
+npm link <package-name>
+Use code with caution.
+
+Replace <package-name> with the name specified in your package's package.json file. This creates a symlink in the test project's node_modules folder pointing to your local package's source code.
+To remove the link when done:
+bash
+cd /path/to/your/test-project
+npm unlink <package-name>
+# Also good practice to run in the package directory
+cd /path/to/your/package
+npm unlink
+Use code with caution.
+
+ 
+Method 2: npm pack (Best for testing the actual install process)
+npm pack creates a .tgz tarball file exactly as it would be published to the npm registry. This method is superior for ensuring your package is correctly bundled (e.g., checking files or .npmignore configurations) because it mimics the actual installation from the registry more closely than npm link. 
+In your package directory:
+bash
+cd /path/to/your/package
+npm pack
+Use code with caution.
+
+This command generates a file named something like <package-name>-<version>.tgz in your directory.
+In your test project directory:
+bash
+cd /path/to/your/test-project
+npm install /path/to/your/package/<package-name>-<version>.tgz
+Use code with caution.
+
+This installs the compressed tarball file as a dependency.
+Note: Unlike npm link, you need to re-run npm pack and npm install in the test project every time you make changes to the package you are developing. 
