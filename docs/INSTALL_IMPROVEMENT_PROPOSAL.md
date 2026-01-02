@@ -211,10 +211,71 @@ npm-package/
 
 ---
 
+## Mechanic Review: Issues Found
+
+### Critical Issues
+
+| Issue | Problem | Resolution |
+|-------|---------|------------|
+| **Verify command doesn't exist** | Proposal references `npx ai-agents verify` but it's not implemented | Must implement before documenting, or remove from quickstart |
+| **Init flags don't exist** | `--generate-storage`, `--generate-routes`, `--run-migrations` not implemented | Defer to Phase 2 or implement first |
+| **Verify makes live calls** | Would POST to hub, fail on auth-protected or offline hubs | Need stub mode or warn about prerequisites |
+| **Template directory conflict** | `npm-package/templates` may already exist, risking duplicates | Audit existing templates first |
+| **Import path mismatch** | Quickstart uses `'ai-coding-agents'` but init references `'ai-coding-agents/drizzle'` | Standardize import paths |
+
+### Edge Cases Not Covered
+
+| Scenario | Gap |
+|----------|-----|
+| Non-Express frameworks (Fastify, Hono, Koa) | No guidance provided |
+| Non-Drizzle ORMs (Prisma, TypeORM, raw SQL) | No schema generation |
+| Read-only environments | Init may fail to write files |
+| Auth-protected hubs | Verify command would fail |
+| Offline/local development | Hub URL required but may not exist |
+
+### Recommendations
+
+1. **Phase 1 (Do Now)**: Only document what currently exists
+   - Quickstart should reference current `init` capabilities
+   - Clearly state manual storage implementation is required
+   - Remove verify command until implemented
+
+2. **Phase 2 (Implement First)**: Build before documenting
+   - Implement verify command with stub/offline mode
+   - Add template generation flags
+   - Test on non-Express/Drizzle projects
+
+3. **Phase 3 (Polish)**: After implementation proven
+   - Update quickstart with new capabilities
+   - Add framework-specific guides
+
+---
+
+## Revised Implementation Plan
+
+### Phase 1: Documentation Only (What Exists Today)
+- [ ] Create QUICKSTART.md using only current capabilities
+- [ ] Document manual storage implementation step (required)
+- [ ] Add copy-paste code blocks for schema and routes
+- [ ] Update README with quickstart link
+- [ ] Remove/update contradicting sections in INTEGRATION_GUIDE.md
+
+### Phase 2: Implement Before Documenting
+- [ ] Implement `npx ai-agents verify` with offline mode
+- [ ] Add `--generate-storage` flag (writes template file)
+- [ ] Test on Fastify/Prisma projects
+- [ ] Update quickstart after implementation
+
+---
+
 ## Approval
 
-- [ ] Create QUICKSTART.md
-- [ ] Create templates directory with files
-- [ ] Add verify command to CLI
-- [ ] Update existing documentation
-- [ ] All of the above
+### Immediate (Phase 1 - Documentation)
+- [ ] Create QUICKSTART.md (current capabilities only)
+- [ ] Update existing docs to reference quickstart
+- [ ] Add copy-paste code blocks
+
+### Deferred (Phase 2 - Implementation Required)
+- [ ] Implement verify command
+- [ ] Add template generation flags
+- [ ] Framework-specific guides
