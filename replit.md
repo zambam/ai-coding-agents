@@ -88,6 +88,13 @@ Before any commit:
 
 ## Recent Changes
 
+- **GitHub Integration Added**
+  - PR review: Analyze pull requests with Architect, Mechanic, and Code Ninja agents
+  - Issue analysis: Classify issues, root cause analysis, suggest solutions
+  - API routes: POST /api/github/pr/review, POST /api/github/issue/analyze
+  - CLI: scripts/github-review.ts for command-line PR/issue review
+  - Can post analysis comments directly to GitHub
+
 - **Agent Behavior Optimization Proposal v2.1 APPROVED**
   - 3-Pass Optimized Workflow with 8 AI calls (down from 10+)
   - Pass 1: Foundation (Philosopher → Architect → Mechanic) - 3 calls

@@ -500,5 +500,101 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/github/pr/review", async (req: Request, res: Response) => {
+    try {
+      const { reviewPullRequest, formatPRReviewOutput } = await import("./github/pr-reviewer");
+      const { owner, repo, prNumber, postComment } = req.body as {
+        owner: string;
+        repo: string;
+        prNumber: number;
+        postComment?: boolean;
+      };
+
+      if (!owner || !repo || !prNumber) {
+        return res.status(400).json({ error: "owner, repo, and prNumber are required" });
+      }
+
+      const result = await reviewPullRequest(owner, repo, prNumber, postComment);
+      res.json({
+        success: true,
+        result: {
+          ...result,
+          formatted: formatPRReviewOutput(result),
+        },
+      });
+    } catch (error) {
+      console.error("Error reviewing PR:", error);
+      res.status(500).json({
+        error: "Failed to review PR",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.post("/api/github/issue/analyze", async (req: Request, res: Response) => {
+    try {
+      const { analyzeIssue, formatIssueAnalysisOutput } = await import("./github/issue-analyzer");
+      const { owner, repo, issueNumber, postComment } = req.body as {
+        owner: string;
+        repo: string;
+        issueNumber: number;
+        postComment?: boolean;
+      };
+
+      if (!owner || !repo || !issueNumber) {
+        return res.status(400).json({ error: "owner, repo, and issueNumber are required" });
+      }
+
+      const result = await analyzeIssue(owner, repo, issueNumber, postComment);
+      res.json({
+        success: true,
+        result: {
+          ...result,
+          formatted: formatIssueAnalysisOutput(result),
+        },
+      });
+    } catch (error) {
+      console.error("Error analyzing issue:", error);
+      res.status(500).json({
+        error: "Failed to analyze issue",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/github/repos/:owner/:repo/prs", async (req: Request, res: Response) => {
+    try {
+      const { listRepositoryPRs } = await import("./github/client");
+      const { owner, repo } = req.params;
+      const state = (req.query.state as "open" | "closed" | "all") || "open";
+
+      const prs = await listRepositoryPRs(owner, repo, state);
+      res.json({ success: true, prs });
+    } catch (error) {
+      console.error("Error listing PRs:", error);
+      res.status(500).json({
+        error: "Failed to list PRs",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/github/repos/:owner/:repo/issues", async (req: Request, res: Response) => {
+    try {
+      const { listRepositoryIssues } = await import("./github/client");
+      const { owner, repo } = req.params;
+      const state = (req.query.state as "open" | "closed" | "all") || "open";
+
+      const issues = await listRepositoryIssues(owner, repo, state);
+      res.json({ success: true, issues });
+    } catch (error) {
+      console.error("Error listing issues:", error);
+      res.status(500).json({
+        error: "Failed to list issues",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   return httpServer;
 }
