@@ -67,12 +67,12 @@ npx ai-agents init \
 
 ## Step 3: Add Schema (1 minute)
 // shared/schema.ts
-import { agentReportsTable, agentLogsTable } from 'ai-coding-agents';
+import { agentReportsTable, agentLogsTable } from 'ai-coding-agents/drizzle';
 export { agentReportsTable, agentLogsTable };
 
 ## Step 4: Add Routes (1 minute)
 // server/routes.ts
-import { createAgentRouter } from 'ai-coding-agents';
+import { createAgentRouter } from 'ai-coding-agents/express';
 app.use('/api/agents', createAgentRouter(storage));
 
 ## Step 5: Implement Storage (2 minutes)

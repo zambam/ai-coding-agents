@@ -25,6 +25,16 @@ git clone https://github.com/zambam/ai-coding-agents.git
 cd ai-coding-agents && npm link
 ```
 
+> **Note**: This is an ESM-only package. Use `import` syntax, not `require()`.
+
+### Optional Peer Dependencies
+
+The package has optional peer dependencies for advanced features:
+- `express` - Required for using `ai-coding-agents/express` router factory
+- `drizzle-orm` - Required for using `ai-coding-agents/drizzle` schema exports
+
+Install them only if you need those specific features.
+
 ## Quick Start
 
 ### CLI Usage
@@ -77,11 +87,13 @@ Mount all agent endpoints in one line:
 
 ```typescript
 import express from 'express';
-import { createAgentRouter } from 'ai-coding-agents';
+import { createAgentRouter } from 'ai-coding-agents/express';
 
 const app = express();
 app.use('/api/agents', createAgentRouter(storage));
 ```
+
+> **Note**: Express router requires `express` as a peer dependency.
 
 **Endpoints provided:**
 | Endpoint | Method | Description |
@@ -107,18 +119,20 @@ import {
   failurePatternsTable,
   FAILURE_CATEGORIES,
   EXTERNAL_AGENT_TYPES
-} from 'ai-coding-agents';
+} from 'ai-coding-agents/drizzle';
 
 // Add to your schema.ts
 export { agentReportsTable, agentLogsTable };
 ```
+
+> **Note**: Drizzle schema requires `drizzle-orm` as a peer dependency.
 
 ### Storage Interface
 
 Implement the `IAgentStorage` interface for your project:
 
 ```typescript
-import { IAgentStorage, detectFailure, categorizeFailure } from 'ai-coding-agents';
+import { IAgentStorage, detectFailure, categorizeFailure } from 'ai-coding-agents/express';
 
 const storage: IAgentStorage = {
   async createAgentReport(input) {
