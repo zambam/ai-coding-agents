@@ -11,11 +11,53 @@ export interface ObserverConfig {
   observeMechanic: boolean;
   observeNinja: boolean;
   observePhilosopher: boolean;
+  observeConversations: boolean;
+  observeToolExecutions: boolean;
+  observeFileOperations: boolean;
+  observeErrors: boolean;
   loadChatHistory: boolean;
   loadLogs: boolean;
   loadDocs: boolean;
   autoContextRefresh: boolean;
   contextRefreshIntervalMs: number;
+}
+
+export type InteractionType = 
+  | "conversation"
+  | "tool_execution"
+  | "file_read"
+  | "file_write"
+  | "command_execution"
+  | "api_call"
+  | "error"
+  | "agent_invoke";
+
+export interface ConversationEntry {
+  id: string;
+  timestamp: Date;
+  type: InteractionType;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  metadata?: {
+    toolName?: string;
+    filePath?: string;
+    command?: string;
+    errorCode?: string;
+    latencyMs?: number;
+    success?: boolean;
+    agentType?: AgentType | "replit_agent";
+  };
+}
+
+export interface SessionStats {
+  totalInteractions: number;
+  conversations: number;
+  toolExecutions: number;
+  fileOperations: number;
+  errors: number;
+  agentInvocations: number;
+  sessionStartTime: Date;
+  lastActivityTime: Date;
 }
 
 export interface ProjectContext {
@@ -47,6 +89,10 @@ const DEFAULT_CONFIG: ObserverConfig = {
   observeMechanic: true,
   observeNinja: true,
   observePhilosopher: true,
+  observeConversations: true,
+  observeToolExecutions: true,
+  observeFileOperations: true,
+  observeErrors: true,
   loadChatHistory: true,
   loadLogs: true,
   loadDocs: true,
@@ -61,6 +107,8 @@ export class ProjectObserver {
   private memoryManager: MemoryManager;
   private projectContext: ProjectContext | null = null;
   private chatHistory: ChatEntry[] = [];
+  private conversationLog: ConversationEntry[] = [];
+  private sessionStats: SessionStats;
   private refreshInterval: NodeJS.Timeout | null = null;
 
   constructor(
@@ -71,6 +119,16 @@ export class ProjectObserver {
     this.storage = storage;
     this.outcomeLearner = new OutcomeLearner(storage);
     this.memoryManager = new MemoryManager(storage);
+    this.sessionStats = {
+      totalInteractions: 0,
+      conversations: 0,
+      toolExecutions: 0,
+      fileOperations: 0,
+      errors: 0,
+      agentInvocations: 0,
+      sessionStartTime: new Date(),
+      lastActivityTime: new Date(),
+    };
   }
 
   async initialize(): Promise<void> {
@@ -88,10 +146,119 @@ export class ProjectObserver {
     console.log("[Observer] Configuration:");
     console.log(`  - Observe Replit Agent: ${this.config.observeReplitAgent}`);
     console.log(`  - Observe Architect: ${this.config.observeArchitect}`);
+    console.log(`  - Observe Conversations: ${this.config.observeConversations}`);
+    console.log(`  - Observe Tool Executions: ${this.config.observeToolExecutions}`);
+    console.log(`  - Observe File Operations: ${this.config.observeFileOperations}`);
+    console.log(`  - Observe Errors: ${this.config.observeErrors}`);
     console.log(`  - Load Chat History: ${this.config.loadChatHistory}`);
     console.log(`  - Load Logs: ${this.config.loadLogs}`);
     console.log(`  - Load Docs: ${this.config.loadDocs}`);
     console.log("[Observer] Initialized successfully");
+  }
+
+  recordConversation(role: "user" | "assistant", content: string): void {
+    if (!this.config.observeConversations) return;
+    
+    const entry: ConversationEntry = {
+      id: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(),
+      type: "conversation",
+      role,
+      content: content.slice(0, 2000),
+    };
+    
+    this.conversationLog.push(entry);
+    this.sessionStats.conversations++;
+    this.sessionStats.totalInteractions++;
+    this.sessionStats.lastActivityTime = new Date();
+    
+    console.log(`[Observer] Recorded ${role} message (${content.length} chars)`);
+  }
+
+  recordToolExecution(toolName: string, success: boolean, latencyMs?: number): void {
+    if (!this.config.observeToolExecutions) return;
+    
+    const entry: ConversationEntry = {
+      id: `tool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(),
+      type: "tool_execution",
+      role: "tool",
+      content: `Tool: ${toolName}`,
+      metadata: { toolName, success, latencyMs },
+    };
+    
+    this.conversationLog.push(entry);
+    this.sessionStats.toolExecutions++;
+    this.sessionStats.totalInteractions++;
+    this.sessionStats.lastActivityTime = new Date();
+  }
+
+  recordFileOperation(operation: "read" | "write", filePath: string, success: boolean): void {
+    if (!this.config.observeFileOperations) return;
+    
+    const entry: ConversationEntry = {
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(),
+      type: operation === "read" ? "file_read" : "file_write",
+      role: "tool",
+      content: `${operation}: ${filePath}`,
+      metadata: { filePath, success },
+    };
+    
+    this.conversationLog.push(entry);
+    this.sessionStats.fileOperations++;
+    this.sessionStats.totalInteractions++;
+    this.sessionStats.lastActivityTime = new Date();
+  }
+
+  recordCommand(command: string, success: boolean, latencyMs?: number): void {
+    if (!this.config.observeToolExecutions) return;
+    
+    const entry: ConversationEntry = {
+      id: `cmd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(),
+      type: "command_execution",
+      role: "tool",
+      content: command.slice(0, 500),
+      metadata: { command: command.slice(0, 200), success, latencyMs },
+    };
+    
+    this.conversationLog.push(entry);
+    this.sessionStats.toolExecutions++;
+    this.sessionStats.totalInteractions++;
+    this.sessionStats.lastActivityTime = new Date();
+  }
+
+  recordError(errorCode: string, message: string): void {
+    if (!this.config.observeErrors) return;
+    
+    const entry: ConversationEntry = {
+      id: `err-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(),
+      type: "error",
+      role: "system",
+      content: message.slice(0, 1000),
+      metadata: { errorCode, success: false },
+    };
+    
+    this.conversationLog.push(entry);
+    this.sessionStats.errors++;
+    this.sessionStats.totalInteractions++;
+    this.sessionStats.lastActivityTime = new Date();
+    
+    console.log(`[Observer] Recorded error: ${errorCode}`);
+  }
+
+  getSessionStats(): SessionStats {
+    return { ...this.sessionStats };
+  }
+
+  getRecentInteractions(limit: number = 50): ConversationEntry[] {
+    return this.conversationLog.slice(-limit);
+  }
+
+  getInteractionsByType(type: InteractionType): ConversationEntry[] {
+    return this.conversationLog.filter(e => e.type === type);
   }
 
   async refreshContext(): Promise<ProjectContext> {

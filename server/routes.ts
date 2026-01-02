@@ -357,5 +357,61 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/observer/stats", async (_req: Request, res: Response) => {
+    try {
+      const { getGlobalObserver } = await import("./agents/learning/observer-config");
+      const observer = getGlobalObserver();
+      
+      if (!observer) {
+        return res.status(503).json({ error: "Observer not initialized" });
+      }
+      
+      const stats = observer.getSessionStats();
+      const config = observer.getConfig();
+      const recentInteractions = observer.getRecentInteractions(20);
+      
+      res.json({
+        status: "active",
+        sessionStats: stats,
+        config: {
+          observeConversations: config.observeConversations,
+          observeToolExecutions: config.observeToolExecutions,
+          observeFileOperations: config.observeFileOperations,
+          observeErrors: config.observeErrors,
+          observeReplitAgent: config.observeReplitAgent,
+          observeArchitect: config.observeArchitect,
+        },
+        recentInteractions: recentInteractions.map(i => ({
+          id: i.id,
+          type: i.type,
+          role: i.role,
+          timestamp: i.timestamp,
+          contentPreview: i.content.slice(0, 100),
+          metadata: i.metadata,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching observer stats:", error);
+      res.status(500).json({ error: "Failed to fetch observer stats" });
+    }
+  });
+
+  app.get("/api/observer/context", async (_req: Request, res: Response) => {
+    try {
+      const { getGlobalObserver } = await import("./agents/learning/observer-config");
+      const observer = getGlobalObserver();
+      
+      if (!observer) {
+        return res.status(503).json({ error: "Observer not initialized" });
+      }
+      
+      const contextSummary = await observer.getContextSummary();
+      res.json({ context: contextSummary });
+    } catch (error) {
+      console.error("Error fetching observer context:", error);
+      res.status(500).json({ error: "Failed to fetch context" });
+    }
+  });
+
   return httpServer;
 }
