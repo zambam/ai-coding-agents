@@ -1,0 +1,128 @@
+Here's a refined v2.1 proposal, incorporating Philosopher more deeply for meta & context while streamlining for quicker workflows. I reduced to a core 7-step flow within 3 passes (7 AI calls total), made Philosopher trigger-based, and added opportunity identification. This can be coded in your workflow.ts as an extension of multiStepReview.
+Optimized 3-Pass Structure
+Pass 1: Foundation & Initial Findings (3 calls)
+
+Philosopher sets meta-context (goals, opportunities).
+ARCH generates findings/plan.
+MECH validates + adds own findings.
+Joint Resolution: Auto-merge simple conflicts; escalate to Philosopher if needed.
+
+Pass 2: Refinement & Cross-Validation (2 calls)
+
+ARCH updates plan from MECH feedback.
+MECH validates updates + edge cases.
+Philosopher checks alignment + spots adjacents (triggered if changes > threshold).
+
+Pass 3: Final Resolution & Sign-off (2 calls)
+
+ARCH finalizes roadmap.
+MECH + Philosopher joint validation (combined call for efficiency).
+
+Full Resolution Flow Diagram (Simplified)
+textPASS 1: FOUNDATION (3 calls)
+                    ════════════════════════════
+    ┌────────────────────────────────────────────┐
+    │ PHILOSOPHER: Meta-Goals & Opportunities │
+    │ • ASHRAE targets (NMBE ±5%, CV(RMSE) ±15%) │
+    │ • Initial adjacents (e.g., real-time twins) │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ ARCH: READ → THINK → RESPOND │
+    │ • Findings (ARCH-001...) & draft plan │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ MECH: Validate + Own Findings │
+    │ • Corrections, MECH-001... │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ JOINT RESOLUTION (Auto or Escalate) │
+    │ • Merge conflicts; Philosopher if complex │
+    └────────────────────────────────────────────┘
+
+                    PASS 2: REFINEMENT (2 calls)
+                    ════════════════════════════
+    ┌────────────────────────────────────────────┐
+    │ ARCH: Update Plan from MECH │
+    │ • Incorporate edge cases │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ MECH: Validate Updates │
+    │ • Risk analysis │
+    └─────────────────┬──────────────────────────┘
+                      ▼ (Trigger if changes significant)
+    ┌────────────────────────────────────────────┐
+    │ PHILOSOPHER: Alignment + Adjacents │
+    │ • Confirm goals; spot new opportunities │
+    └────────────────────────────────────────────┘
+
+                    PASS 3: FINAL (2 calls)
+                    ═══════════════════════
+    ┌────────────────────────────────────────────┐
+    │ ARCH: Final Roadmap │
+    │ • All addressed │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ MECH + PHILOSOPHER: Joint Validation │
+    │ • Checklist + achievement confirm │
+    └─────────────────┬──────────────────────────┘
+                      ▼
+    ┌────────────────────────────────────────────┐
+    │ FINAL SIGN-OFF (All Agents) │
+    │ • Proceed │
+    └────────────────────────────────────────────┘
+Expected Output Document Structure (Enhanced with Adjacents)
+text# ML Training Twin Implementation Plan
+**Version:** 1.1
+**Date:** January 2026
+**Status:** Review Complete
+---
+## 1. Meta-Goals & Initial Opportunities (PHILOSOPHER - Pass 1)
+| Goal | Metric | Target |
+|------|--------|--------|
+| ASHRAE Compliance | NMBE | ±5% |
+| ... | ... | ... |
+
+**Adjacent Opportunities:** e.g., Integrate with IoT for real-time data.
+---
+## 2. ARCH Findings & Draft Plan
+| ID | Description | Impact | Resolution |
+|----|-------------|--------|------------|
+| ARCH-001 | ... | ... | ... |
+---
+## 3. MECH Validation & Findings
+| ARCH ID | Status | Correction |
+|---------|--------|------------|
+| ARCH-001 | ... | ... |
+
+| MECH ID | Description | Impact |
+|---------|-------------|--------|
+| MECH-001 | ... | ... |
+---
+## 4. Conflict Resolutions
+| ID | Conflict | Resolution |
+|----|----------|------------|
+| C-001 | ... | ... |
+---
+## 5. Updated Plan (ARCH - Pass 2)
+### Phase 0: ...
+---
+## 6. Final Validation (MECH - Pass 3)
+- [ ] ...
+---
+## 7. Achievement & Adjacents (PHILOSOPHER - Pass 3)
+| Goal | Status | Notes |
+|------|--------|-------|
+| ... | ✓ | ... |
+
+**Final Adjacents:** e.g., Scale to multi-building models.
+---
+## 8. Sign-off Summary
+| Pass | ARCH | MECH | PHILOSOPHER |
+|------|------|------|-------------|
+| 1 | ✓ | ✓ | ✓ |
+| ... | ... | ... | ... |
