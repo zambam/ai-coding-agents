@@ -42,6 +42,10 @@ interface GenerateRulesOptions {
   output?: string;
 }
 
+interface HooksOptions {
+  action: 'install' | 'uninstall' | 'status';
+}
+
 interface CommandResult {
   success: boolean;
   exitCode: number;
@@ -357,6 +361,147 @@ export async function viewAnalytics(options: AnalyticsOptions): Promise<CommandR
   }
 }
 
+export async function manageHooks(options: HooksOptions): Promise<CommandResult> {
+  const fs = await import("fs");
+  const path = await import("path");
+  
+  const gitDir = path.join(process.cwd(), ".git");
+  const hooksDir = path.join(gitDir, "hooks");
+  
+  if (!fs.existsSync(gitDir)) {
+    console.error("Error: Not a git repository (no .git directory)");
+    return { success: false, exitCode: 1, message: "Not a git repository" };
+  }
+  
+  const hookFiles = ["post-commit", "pre-commit", "post-merge"];
+  
+  if (options.action === "status") {
+    console.log("\n=== Git Hooks Status ===\n");
+    for (const hook of hookFiles) {
+      const hookPath = path.join(hooksDir, hook);
+      const exists = fs.existsSync(hookPath);
+      let isAiAgent = false;
+      if (exists) {
+        const content = fs.readFileSync(hookPath, "utf-8");
+        isAiAgent = content.includes("AI Agent Monitor");
+      }
+      console.log(`  ${hook}: ${exists ? (isAiAgent ? "installed (ai-agents)" : "exists (other)") : "not installed"}`);
+    }
+    return { success: true, exitCode: 0 };
+  }
+  
+  if (options.action === "install") {
+    if (!fs.existsSync(hooksDir)) {
+      fs.mkdirSync(hooksDir, { recursive: true });
+    }
+    
+    console.log("\n=== Installing Git Hooks ===\n");
+    
+    const hookTemplates: Record<string, string> = {
+      "post-commit": `#!/bin/bash
+# AI Agent Monitor - Post-commit hook
+# Reports accepted AI-generated code to the central hub
+
+PROJECT_ID="\${AI_AGENTS_PROJECT_ID:-}"
+API_URL="\${AI_AGENTS_API_URL:-http://localhost:5000}"
+
+if [ -z "$PROJECT_ID" ]; then
+  REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+  if [ -n "$REMOTE_URL" ]; then
+    PROJECT_ID=$(echo "$REMOTE_URL" | sed 's/.*github.com[:/]//' | sed 's/\\.git$//')
+  else
+    PROJECT_ID=$(basename "$(pwd)")
+  fi
+fi
+
+COMMIT_MSG=$(git log -1 --pretty=%B)
+DETECTED_AGENT="unknown"
+
+if echo "$COMMIT_MSG" | grep -qiE "copilot|cursor|claude|replit|windsurf|aider|continue|cody|gpt|ai-generated"; then
+  echo "[AI Agent Monitor] Detected AI code, reporting..."
+  curl -s -X POST "$API_URL/api/agents/external/report" \\
+    -H "Content-Type: application/json" \\
+    -d "{\\"projectId\\": \\"$PROJECT_ID\\", \\"externalAgent\\": \\"$DETECTED_AGENT\\", \\"action\\": \\"commit_accepted\\", \\"codeAccepted\\": true}" \\
+    --max-time 5 >/dev/null 2>&1 || true
+fi
+`,
+      "pre-commit": `#!/bin/bash
+# AI Agent Monitor - Pre-commit hook
+# Runs QA scan on staged files
+
+if command -v npx &>/dev/null; then
+  echo "[AI Agent Monitor] Running pre-commit scan..."
+  npx ai-agents scan . 2>/dev/null || true
+fi
+`,
+      "post-merge": `#!/bin/bash
+# AI Agent Monitor - Post-merge hook
+# Syncs AGENT_RULES.md after merges
+
+PROJECT_ID="\${AI_AGENTS_PROJECT_ID:-}"
+API_URL="\${AI_AGENTS_API_URL:-http://localhost:5000}"
+
+if [ -z "$PROJECT_ID" ]; then
+  REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+  if [ -n "$REMOTE_URL" ]; then
+    PROJECT_ID=$(echo "$REMOTE_URL" | sed 's/.*github.com[:/]//' | sed 's/\\.git$//')
+  fi
+fi
+
+if [ -n "$PROJECT_ID" ]; then
+  echo "[AI Agent Monitor] Syncing AGENT_RULES.md..."
+  npx ai-agents generate-rules "$PROJECT_ID" --output AGENT_RULES.md 2>/dev/null || true
+fi
+`
+    };
+    
+    for (const [hook, content] of Object.entries(hookTemplates)) {
+      const hookPath = path.join(hooksDir, hook);
+      
+      if (fs.existsSync(hookPath)) {
+        const existing = fs.readFileSync(hookPath, "utf-8");
+        if (!existing.includes("AI Agent Monitor")) {
+          console.log(`  ${hook}: skipped (existing hook found, backup and retry)`);
+          continue;
+        }
+      }
+      
+      fs.writeFileSync(hookPath, content);
+      fs.chmodSync(hookPath, 0o755);
+      console.log(`  ${hook}: installed`);
+    }
+    
+    console.log("\nHooks installed successfully!");
+    console.log("Set AI_AGENTS_API_URL to point to your hub server.");
+    return { success: true, exitCode: 0 };
+  }
+  
+  if (options.action === "uninstall") {
+    console.log("\n=== Uninstalling Git Hooks ===\n");
+    
+    for (const hook of hookFiles) {
+      const hookPath = path.join(hooksDir, hook);
+      
+      if (fs.existsSync(hookPath)) {
+        const content = fs.readFileSync(hookPath, "utf-8");
+        if (content.includes("AI Agent Monitor")) {
+          fs.unlinkSync(hookPath);
+          console.log(`  ${hook}: removed`);
+        } else {
+          console.log(`  ${hook}: skipped (not an ai-agents hook)`);
+        }
+      } else {
+        console.log(`  ${hook}: not found`);
+      }
+    }
+    
+    console.log("\nHooks uninstalled.");
+    return { success: true, exitCode: 0 };
+  }
+  
+  return { success: false, exitCode: 1, message: "Invalid action" };
+}
+
 function printHelp(): void {
   console.log(`
 AI Coding Agents CLI
@@ -370,6 +515,7 @@ Commands:
   report <projectId>         Submit an external agent report
   generate-rules <projectId> Generate AGENT_RULES.md for a project
   analytics [projectId]      View failure analytics
+  hooks <action>             Manage git hooks (install/uninstall/status)
   help                       Show this help message
 
 Options for 'invoke':
@@ -395,6 +541,11 @@ Options for 'analytics':
   --json                     Output as JSON
   --export                   Export data (requires projectId)
 
+Options for 'hooks':
+  install                    Install git hooks for ML reporting
+  uninstall                  Remove ai-agents git hooks
+  status                     Show current hook status
+
 Environment Variables:
   OPENAI_API_KEY             Required for invoke command
   XAI_API_KEY                Optional for Grok second opinions
@@ -407,6 +558,8 @@ Examples:
   ai-agents report my-project --agent cursor --action code_gen --accepted
   ai-agents generate-rules my-project --output AGENT_RULES.md
   ai-agents analytics my-project --json
+  ai-agents hooks install
+  ai-agents hooks status
 `);
 }
 
@@ -549,6 +702,17 @@ export async function parseArgs(args: string[]): Promise<CommandResult> {
     }
     
     return viewAnalytics({ projectId, format, export: exportData });
+  }
+  
+  if (command === "hooks") {
+    const action = args[1];
+    
+    if (!action || !["install", "uninstall", "status"].includes(action)) {
+      console.error("Error: hooks requires action: install, uninstall, or status");
+      return { success: false, exitCode: 1 };
+    }
+    
+    return manageHooks({ action: action as "install" | "uninstall" | "status" });
   }
   
   console.error(`Error: Unknown command '${command}'`);

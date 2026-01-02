@@ -118,3 +118,17 @@ export {
   type ScanIssue,
   type ScanResult,
 } from "./scanner";
+
+// Client SDK for ML reporting
+export {
+  AgentMonitorClient,
+  createMonitorClient,
+  loadConfig,
+  createAutoClient,
+  type ExternalAgentType,
+  type ClientConfig,
+  type ReportEvent,
+  type ReportResult,
+  type Guidelines,
+  type AnalyticsResult,
+} from "./client-sdk";
