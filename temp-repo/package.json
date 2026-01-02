@@ -1,0 +1,58 @@
+{
+  "name": "ai-coding-agents",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "AI-powered coding agents with dual-LLM reasoning (OpenAI + Grok)",
+  "author": "",
+  "keywords": [
+    "ai",
+    "agents",
+    "coding",
+    "openai",
+    "grok",
+    "llm",
+    "code-review"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    },
+    "./scanner": {
+      "import": "./dist/scanner.js",
+      "types": "./dist/scanner.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build:package": "tsc -p tsconfig.package.json",
+    "prepublishOnly": "npm run build:package"
+  },
+  "peerDependencies": {
+    "openai": "^4.0.0 || ^6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/ai-coding-agents"
+  },
+  "module": "./dist/index.js",
+  "bin": {
+    "ai-agents": "./dist/cli.js"
+  },
+  "dependencies": {
+    "openai": "^6.15.0",
+    "pino": "^10.1.0",
+    "zod": "^3.25.0",
+    "zod-validation-error": "^3.5.0"
+  }
+}
