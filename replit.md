@@ -88,6 +88,13 @@ Before any commit:
 
 ## Recent Changes
 
+- **Cross-Project Observer Configured**
+  - ProjectObserver class for tracking Replit agent and Architect interactions
+  - Auto-loads chat history, logs, and docs for context awareness
+  - Integrated with ML learning hub (OutcomeLearner, MemoryManager)
+  - Configurable observation: observeReplitAgent, observeArchitect, loadDocs, loadLogs
+  - Context refresh with project phase detection, pending tasks, key files
+
 - **Phase 5 Complete: Documentation & Publishing Prep**
   - Comprehensive NPM README (docs/NPM_README.md) with usage examples
   - Full API Reference (docs/API_REFERENCE.md) documenting all exports
