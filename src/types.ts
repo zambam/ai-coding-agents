@@ -316,3 +316,41 @@ export const DEFAULT_DIAGNOSTICS_OPTIONS: DiagnosticsOptions = {
   includeLastRun: true,
   maxRunHistory: 10,
 };
+
+export const EXTERNAL_AGENT_TYPES = [
+  "replit_agent",
+  "cursor",
+  "copilot",
+  "claude_code",
+  "windsurf",
+  "aider",
+  "continue",
+  "cody",
+  "unknown",
+] as const;
+export type ExternalAgentType = typeof EXTERNAL_AGENT_TYPES[number];
+
+export const FAILURE_CATEGORIES = [
+  "security_gap",
+  "logic_error",
+  "context_blindness",
+  "outdated_api",
+  "missing_edge_case",
+  "poor_readability",
+  "broke_existing",
+  "hallucinated_code",
+] as const;
+export type FailureCategory = typeof FAILURE_CATEGORIES[number];
+
+export const FAILURE_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export type FailureSeverity = typeof FAILURE_SEVERITIES[number];
+
+export interface MonitorAnalytics {
+  projectId?: string;
+  totalReports: number;
+  failuresByCategory: Record<FailureCategory, number>;
+  failuresByAgent: Record<ExternalAgentType, number>;
+  failuresBySeverity: Record<FailureSeverity, number>;
+  topPatterns: Array<{ pattern: string; occurrences: number; category: FailureCategory }>;
+  recentTrend: Array<{ date: string; count: number }>;
+}

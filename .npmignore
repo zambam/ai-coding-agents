@@ -1,0 +1,49 @@
+# NPM Ignore - Exclude Replit app scaffolding from NPM package
+# Only dist/, templates/, and README.npm.md should be published
+
+# Replit app directories (NOT part of NPM package)
+client/
+server/
+shared/
+docs/
+scripts/
+script/
+attached_assets/
+
+# Configuration files (app-specific)
+vite.config.ts
+tailwind.config.ts
+postcss.config.js
+drizzle.config.ts
+components.json
+design_guidelines.md
+replit.md
+vitest.config.ts
+tsconfig.json
+
+# Use package-specific tsconfig
+!tsconfig.package.json
+
+# Test files
+src/__tests__/
+**/*.test.ts
+**/*.spec.ts
+
+# Development files
+*.log
+.env
+.env.*
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Build artifacts (source, not dist)
+node_modules/
+
+# Documentation (keep README.npm.md, exclude others)
+README.md
+PROPOSAL.md
+*.proposal.md

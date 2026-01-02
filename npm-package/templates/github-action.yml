@@ -1,0 +1,108 @@
+# AI Coding Agents - GitHub Actions Workflow
+# 
+# This workflow integrates AI coding agent QA checks into your CI/CD pipeline.
+# Copy this file to .github/workflows/ in your project.
+#
+# Features:
+# - Fake/placeholder data detection
+# - Security pattern scanning
+# - PII detection
+# - Configurable strictness levels
+
+name: AI Agents QA
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  qa-scan:
+    name: Code Quality Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install AI Agents CLI
+        run: npm install -g @ai-coding-agents/cli
+        continue-on-error: true
+      
+      - name: Run QA Scanner
+        run: |
+          npx @ai-coding-agents/cli scan ./src --ext .ts,.tsx,.js,.jsx
+        env:
+          CI: true
+      
+      - name: Run QA Scanner (Strict Mode)
+        if: github.event_name == 'pull_request'
+        run: |
+          npx @ai-coding-agents/cli scan ./src --strict --ext .ts,.tsx,.js,.jsx
+        continue-on-error: true
+
+  type-check:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript check
+        run: npm run check
+
+  ai-review:
+    name: AI Agent Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Get changed files
+        id: changed-files
+        run: |
+          echo "files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+      
+      - name: Run AI Architect Review
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          echo "Reviewing changed files: ${{ steps.changed-files.outputs.files }}"
+          # Invoke the architect agent for code review
+          # Note: Requires OPENAI_API_KEY secret to be configured
+          npx @ai-coding-agents/cli invoke architect "Review these code changes for architectural issues: ${{ steps.changed-files.outputs.files }}" || true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}

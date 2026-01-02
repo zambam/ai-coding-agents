@@ -18,5 +18,12 @@
     "noEmit": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "client", "server", "shared"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "client",
+    "server",
+    "shared",
+    "src/__tests__/**/*"
+  ]
 }

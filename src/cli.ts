@@ -3,8 +3,7 @@ import { Orchestrator } from "./agents";
 import { FakeDataScanner, type ScanResult } from "./scanner";
 import { createLogger } from "./logger";
 import { DEFAULT_AGENT_CONFIG, STRICT_AGENT_CONFIG } from "./constants";
-import type { AgentType, AgentConfig } from "./types";
-import type { ExternalAgentType } from "../shared/schema";
+import type { AgentType, AgentConfig, ExternalAgentType } from "./types";
 
 const logger = createLogger({ level: "info" });
 const API_BASE_URL = process.env.AI_AGENTS_API_URL || "http://localhost:5000";
@@ -214,11 +213,16 @@ export async function submitReport(options: ReportOptions): Promise<CommandResul
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const errorBody = await response.json() as { message?: string };
+      throw new Error(errorBody.message || `HTTP ${response.status}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as {
+      reportId: string;
+      detectedFailure: boolean;
+      failureCategory?: string;
+      failureSeverity?: string;
+    };
     
     console.log("\n=== Report Submitted ===\n");
     console.log("Report ID:", result.reportId);
@@ -248,11 +252,19 @@ export async function generateRules(options: GenerateRulesOptions): Promise<Comm
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const errorBody = await response.json() as { message?: string };
+      throw new Error(errorBody.message || `HTTP ${response.status}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as {
+      rulesGenerated: number;
+      guidelines: {
+        projectId: string;
+        rulesMarkdown: string;
+        confidence: number;
+        observationCount: number;
+      };
+    };
     
     console.log("\n=== Guidelines Generated ===\n");
     console.log("Project:", result.guidelines.projectId);
@@ -290,11 +302,20 @@ export async function viewAnalytics(options: AnalyticsOptions): Promise<CommandR
     const response = await fetch(url.toString());
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const errorBody = await response.json() as { message?: string };
+      throw new Error(errorBody.message || `HTTP ${response.status}`);
     }
     
-    const result = await response.json();
+    const result = await response.json() as {
+      projectId?: string;
+      healthScore: number;
+      analytics: {
+        totalReports: number;
+        failuresByCategory: Record<string, number>;
+        failuresBySeverity: Record<string, number>;
+        topPatterns: Array<{ pattern: string; occurrences: number; category: string }>;
+      };
+    };
     
     if (options.format === "json" || options.export) {
       console.log(JSON.stringify(result, null, 2));
@@ -302,27 +323,27 @@ export async function viewAnalytics(options: AnalyticsOptions): Promise<CommandR
     }
     
     console.log("\n=== Monitor Analytics ===\n");
-    console.log("Project:", result.projectId);
+    console.log("Project:", result.projectId ?? "All Projects");
     console.log("Total Reports:", result.analytics.totalReports);
     console.log("Health Score:", result.healthScore.toFixed(1) + "%");
     
     console.log("\n--- Failures by Category ---");
     for (const [category, count] of Object.entries(result.analytics.failuresByCategory)) {
-      if (count as number > 0) {
+      if (count > 0) {
         console.log(`  ${category}: ${count}`);
       }
     }
     
     console.log("\n--- Failures by Severity ---");
     for (const [severity, count] of Object.entries(result.analytics.failuresBySeverity)) {
-      if (count as number > 0) {
+      if (count > 0) {
         console.log(`  ${severity}: ${count}`);
       }
     }
     
     if (result.analytics.topPatterns.length > 0) {
       console.log("\n--- Top Patterns ---");
-      result.analytics.topPatterns.slice(0, 5).forEach((p: { pattern: string; occurrences: number; category: string }) => {
+      result.analytics.topPatterns.slice(0, 5).forEach((p) => {
         console.log(`  ${p.category}: ${p.pattern} (${p.occurrences}x)`);
       });
     }
