@@ -1,337 +1,416 @@
 # Agent Behavior Optimization Proposal
 
-**Version:** 1.0  
+**Version:** 2.1  
 **Date:** January 2, 2026  
-**Status:** PROPOSED  
-**Method:** 4-Agent + Orchestrator Methodology
+**Status:** APPROVED  
+**Method:** 3-Pass Optimized Workflow (8 AI Calls)
 
 ---
 
 ## Executive Summary
 
-This proposal outlines a structured approach to improve Architect and Mechanic agent behavior using the AI-coding-agents package methodology. The goal is to reduce complexity, speed up workflows, and optimize for the 2026 Replit ecosystem including Fast mode and plan-first workflows.
+This proposal outlines an optimized 3-pass workflow for agent coordination, reducing complexity while maintaining quality. The goal is to streamline Architect and Mechanic interactions with trigger-based Philosopher involvement and Code Ninja execution.
 
 **Key Targets:**
-- Reduce rework by 40% through structured prompts
-- Cut latency by 50-70% via configuration optimization
-- Prevent inefficient back-and-forth with plan-first workflow
+- Reduce AI calls from 10+ to 8 total
+- 50-70% latency improvement via structured passes
+- Philosopher trigger-based at 15% change threshold
+- Joint validation for efficiency
+- Code Ninja executes approved changes before sign-off
 
 ---
 
-## Proposed Process
+## Optimized 3-Pass Structure
 
-### Phase 1: Architect Analysis (Design Phase)
-```
-Input: Current agent configuration and behavior patterns
-Output: Optimized blueprint for agent improvements
-Agent: The Architect
-Focus: Minimal MVP design, scalable patterns
-```
+### Pass 1: Foundation & Initial Findings (3 calls)
 
-### Phase 2: Mechanic Diagnosis (Fix Phase)
-```
-Input: Architect's blueprint + current codebase
-Output: Specific fixes and quick wins
-Agent: The Mechanic
-Focus: Efficiency improvements, 2-3 targeted fixes per area
-```
+| Step | Agent | Role |
+|------|-------|------|
+| 1 | Philosopher | Sets meta-context, goals, opportunities |
+| 2 | Architect | Generates findings/plan (READ → THINK → RESPOND) |
+| 3 | Mechanic | Validates + adds own findings |
 
-### Phase 3: Code Ninja Implementation (Build Phase)
-```
-Input: Approved fixes from Mechanic review
-Output: Implemented changes with tests
-Agent: The Code Ninja
-Focus: Fast, precise execution
-```
+**Joint Resolution:** Auto-merge simple conflicts; escalate to Philosopher if complex.
 
-### Phase 4: Philosopher Evaluation (Review Phase)
+### Pass 2: Refinement & Cross-Validation (2 calls)
+
+| Step | Agent | Role |
+|------|-------|------|
+| 4 | Architect | Updates plan from Mechanic feedback |
+| 5 | Mechanic | Validates updates + edge cases |
+
+**Philosopher Trigger:** If changes exceed 15% threshold, Philosopher checks alignment + spots adjacents.
+
+### Pass 3: Final Resolution & Sign-off (3 calls)
+
+| Step | Agent | Role |
+|------|-------|------|
+| 6 | Architect | Finalizes roadmap |
+| 7 | Mechanic + Philosopher | Joint validation (1 combined call) |
+| 8 | Code Ninja | Implements approved changes |
+
+**Sign-off:** Workflow confirmation (not an AI call - just status check).
+
+---
+
+## Full Resolution Flow Diagram
+
 ```
-Input: Implemented changes
-Output: Decision validation, opportunity identification
-Agent: The Philosopher
-Focus: Long-term impact assessment
+PASS 1: FOUNDATION (3 calls)
+════════════════════════════
+┌────────────────────────────────────────────┐
+│ [Call 1] PHILOSOPHER: Meta-Goals           │
+│ • Project targets and success metrics      │
+│ • Initial adjacents (optimization paths)   │
+│ • Store adjacents in ML system             │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│ [Call 2] ARCHITECT: READ → THINK → RESPOND │
+│ • Findings (ARCH-001...) & draft plan      │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│ [Call 3] MECHANIC: Validate + Findings     │
+│ • Corrections, MECH-001...                 │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  JOINT RESOLUTION (No AI call - logic only) 
+│ • Same finding, different wording → merge  │
+  • Contradictory recommendations → escalate 
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+PASS 2: REFINEMENT (2 calls + optional trigger)
+════════════════════════════════════════════════
+┌────────────────────────────────────────────┐
+│ [Call 4] ARCHITECT: Update Plan            │
+│ • Incorporate Mechanic feedback            │
+│ • Address edge cases                       │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│ [Call 5] MECHANIC: Validate Updates        │
+│ • Risk analysis                            │
+│ • Calculate change percentage              │
+└─────────────────┬──────────────────────────┘
+                  ▼ (Trigger if changes > 15%)
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  [Optional] PHILOSOPHER: Alignment Check    
+│ • Confirm goals still aligned              │
+  • Spot new adjacents → store in ML         
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+PASS 3: FINAL (3 calls)
+═══════════════════════
+┌────────────────────────────────────────────┐
+│ [Call 6] ARCHITECT: Final Roadmap          │
+│ • All findings addressed                   │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│ [Call 7] MECHANIC + PHILOSOPHER: Joint     │
+│ • Checklist + achievement confirm          │
+│ • Final adjacents stored in ML system      │
+│ (1 combined call for efficiency)           │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌────────────────────────────────────────────┐
+│ [Call 8] CODE NINJA: Execute Changes       │
+│ • Implement from validated roadmap         │
+│ • No additional features                   │
+└─────────────────┬──────────────────────────┘
+                  ▼
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  SIGN-OFF (No AI call - status check only)  
+│ • Confirm all steps complete               │
+  • Proceed to deployment                    
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 ```
 
 ---
 
-## Agent Details
+## Expected Output Document Structure
 
-### The Architect
-**Role:** Designs robust, scalable system blueprints  
-**Optimization Target:** Better plans with structured prompts  
-**Prompt Pattern:**
-```
-"As Architect, outline a minimal MVP for [feature] with 3 key components. 
-Keep it under 500 words."
-```
-
-### The Mechanic
-**Role:** Diagnoses and repairs code issues  
-**Optimization Target:** Smarter fixes with specific context  
-**Prompt Pattern:**
-```
-"Diagnose this code [paste snippet] for efficiency; 
-suggest 2-3 quick fixes only."
-```
-
-### The Code Ninja
-**Role:** Executes fast, precise implementations  
-**Optimization Target:** Minimal scope, maximum impact  
-**Prompt Pattern:**
-```
-"Implement [specific change] following the approved blueprint. 
-No additional features."
-```
-
-### The Philosopher
-**Role:** Evaluates decisions and identifies opportunities  
-**Optimization Target:** Strategic validation  
-**Prompt Pattern:**
-```
-"Evaluate these changes against project goals. 
-Identify risks and missed opportunities."
-```
-
----
-
-## Implementation Plan
-
-### 1. Simplify Configuration for Faster, Less Complex Behavior
-**Time:** 5 minutes  
-**Impact:** 30-50% faster execution
-
-The package's complexity comes from reliability features like multi-path reasoning and critiques. Dial these down via `replit.md` for quicker runs.
-
-**Configuration Update (replit.md):**
 ```markdown
-## Agent Configuration
-consistency.mode: fast          # Skips voting, reduces latency by 50-70%
-validationLevel: medium         # Balances speed/accuracy; strict is slowest
-enableSelfCritique: false       # Skip reflection loops, speeds up 20-30%
-enablePhilosopher: false        # Keeps workflows to 2-3 agents
-enableGrokSecondOpinion: false  # Faster primary LLM use for simple tasks
-maxTokens: 2048                 # Lower from 4096 to cut costs/latency
-temperature: 0.6                # More creative but quicker responses
+# [Feature/Task] Implementation Plan
+**Version:** 1.0
+**Date:** [Date]
+**Status:** Review Complete
+
+---
+
+## 1. Meta-Goals & Initial Opportunities (PHILOSOPHER - Pass 1)
+| Goal | Metric | Target |
+|------|--------|--------|
+| Code Quality | CLASSic Score | > 0.8 |
+| Latency | Response Time | < 5000ms |
+| Rework | Revision Rate | < 15% |
+
+**Adjacent Opportunities:** [Optimization paths identified]
+**ML Storage:** [adjacents stored for future learning]
+
+---
+
+## 2. Architect Findings & Draft Plan
+| ID | Description | Impact | Resolution |
+|----|-------------|--------|------------|
+| ARCH-001 | ... | High | ... |
+| ARCH-002 | ... | Medium | ... |
+
+---
+
+## 3. Mechanic Validation & Findings
+| ARCH ID | Status | Correction |
+|---------|--------|------------|
+| ARCH-001 | Validated | None |
+| ARCH-002 | Modified | [Correction] |
+
+| MECH ID | Description | Impact |
+|---------|-------------|--------|
+| MECH-001 | ... | ... |
+
+---
+
+## 4. Conflict Resolutions
+| ID | Conflict | Type | Resolution | Resolved By |
+|----|----------|------|------------|-------------|
+| C-001 | Same finding, different wording | Simple | Auto-merged | System |
+| C-002 | Contradictory recommendations | Complex | [Decision] | Philosopher |
+
+---
+
+## 5. Updated Plan (ARCHITECT - Pass 2)
+### Phase 1: [Component]
+- Task 1.1
+- Task 1.2
+
+### Phase 2: [Component]
+- Task 2.1
+
+---
+
+## 6. Final Validation (MECHANIC + PHILOSOPHER - Pass 3)
+### Mechanic Checklist
+- [ ] All ARCH findings addressed
+- [ ] All MECH findings addressed
+- [ ] Edge cases covered
+- [ ] Risk analysis complete
+
+### Philosopher Confirmation
+- [ ] Goals aligned
+- [ ] Adjacents documented
+- [ ] ML storage updated
+
+---
+
+## 7. Code Ninja Execution (Pass 3)
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement approved changes | Pending | From validated roadmap |
+| No additional features | Enforced | Scope constraint |
+
+---
+
+## 8. Achievement & Adjacents (PHILOSOPHER - Pass 3)
+| Goal | Status | Notes |
+|------|--------|-------|
+| Code Quality | ✓ | CLASSic 0.85 |
+| Latency | ✓ | 3200ms avg |
+
+**Final Adjacents:** [Future optimization opportunities]
+**ML System:** Adjacents stored for continuous learning
+
+---
+
+## 9. Sign-off Summary
+| Pass | Architect | Mechanic | Philosopher | Code Ninja |
+|------|-----------|----------|-------------|------------|
+| 1 | ✓ | ✓ | ✓ | - |
+| 2 | ✓ | ✓ | [Triggered/Skipped] | - |
+| 3 | ✓ | ✓ | ✓ | ✓ |
 ```
 
-**Why it helps:**
-- Reduces overhead in Architect (fewer blueprint validations)
-- Faster Mechanic diagnoses
-- Preps for Architect → Mechanic 2-agent flows
+---
 
-### 2. Refine Prompts for Better Agent Responses
-**Time:** Immediate  
-**Impact:** 40% reduction in rework
+## Philosopher Trigger Conditions
 
-Use structured prompts with specifics to avoid rambling responses.
+| Condition | Threshold | Action |
+|-----------|-----------|--------|
+| Plan changes | > 15% | Philosopher alignment check |
+| Conflict count | > 2 | Escalate to Philosopher |
+| Risk severity | High | Philosopher review |
+| Security impact | Any | Philosopher review |
 
-**Architect Prompt Template:**
+---
+
+## Conflict Resolution Logic
+
+### Simple Conflicts (Auto-Merge)
+- Same finding with different wording
+- Non-contradictory recommendations
+- Stylistic differences
+
+### Complex Conflicts (Escalate to Philosopher)
+- Contradictory recommendations
+- Mutually exclusive approaches
+- Security vs. performance trade-offs
+- Scope disagreements
+
+---
+
+## Adjacent Opportunities Storage
+
+Adjacents are stored in both locations:
+
+### 1. ML System (MemoryManager)
 ```typescript
-const architectPrompt = `As Architect, outline a minimal MVP for ${feature} with:
-1. Core components (max 3)
-2. Data flow diagram (text-based)
-3. Integration points
-
-Keep it under 500 words. No implementation details.`;
+await memoryManager.store({
+  type: 'adjacent_opportunity',
+  content: adjacentDescription,
+  metadata: {
+    source: 'philosopher',
+    pass: passNumber,
+    task: taskId,
+    timestamp: new Date().toISOString()
+  }
+});
 ```
 
-**Mechanic Prompt Template:**
-```typescript
-const mechanicPrompt = `Diagnose this code for efficiency:
+### 2. Output Document
+Adjacents are documented in:
+- Section 1: Initial opportunities (Pass 1)
+- Section 8: Final adjacents (Pass 3)
 
-\`\`\`typescript
-${codeSnippet}
-\`\`\`
+---
+
+## Configuration for 3-Pass Workflow
+
+```yaml
+# replit.md configuration
+workflow.passes: 3
+workflow.maxCalls: 8
+philosopher.triggerThreshold: 0.15  # 15% change threshold
+philosopher.alwaysOnPass1: true
+philosopher.alwaysOnPass3: true
+jointValidation.enabled: true
+autoMerge.simpleConflicts: true
+codeNinja.executeAfterValidation: true
+adjacents.storeInML: true
+adjacents.documentInOutput: true
+```
+
+---
+
+## Agent Prompt Templates
+
+### Philosopher (Pass 1)
+```
+As Philosopher, establish meta-goals for [task]:
+1. Define success metrics (max 5)
+2. Identify adjacent opportunities
+3. Set quality thresholds
+
+Store adjacents for ML learning. Keep under 300 words.
+```
+
+### Architect (Pass 1 & 2)
+```
+As Architect, outline plan for [task] with:
+1. Findings list (ARCH-001, ARCH-002...)
+2. Core components (max 3)
+3. Data flow (text-based)
+
+Keep under 500 words. No implementation details.
+```
+
+### Mechanic (Pass 1, 2 & 3)
+```
+Validate Architect's findings:
+
+[ARCH findings]
 
 Provide:
-1. Root cause analysis (1 paragraph)
-2. 2-3 quick fixes (prioritized)
-3. Estimated impact per fix
+1. Validation status per finding
+2. Your own findings (MECH-001...)
+3. Risk assessment
 
-No refactoring suggestions beyond the immediate issue.`;
+Flag contradictions for Philosopher escalation.
 ```
 
-### 3. Plan First, Then Execute
-**Time:** 5 minutes setup  
-**Impact:** Prevents inefficient back-and-forth
-
-Adopt a "plan-first" workflow:
-1. Run Architect standalone for outlines
-2. Approve/modify via visual review
-3. Feed approved plan to Mechanic or Ninja
-
-**Workflow Implementation:**
-```typescript
-// Step 1: Architect creates plan
-const plan = await architect.invoke(task, { 
-  outputFormat: 'structured',
-  maxTokens: 1024 
-});
-
-// Step 2: Human approval checkpoint
-console.log('=== ARCHITECT PLAN ===');
-console.log(plan.response);
-console.log('Approve? (y/n)');
-
-// Step 3: Feed to execution agent
-if (approved) {
-  const result = await mechanic.invoke(
-    `Execute this approved plan:\n${plan.response}`,
-    { strict: true }
-  );
-}
+### Code Ninja (Pass 3)
 ```
+Implement approved changes from validated roadmap:
 
-### 4. Monitor and Tune with CLASSic Metrics
-**Time:** 10 minutes  
-**Impact:** Data-driven optimization
+[Final roadmap]
 
-Log and analyze metrics for continuous improvement:
+Rules:
+1. Follow approved blueprint exactly
+2. No additional features
+3. No scope expansion
 
-```typescript
-const result = await orchestrator.runPipeline(task);
-
-// Log metrics for analysis
-console.log('=== CLASSic METRICS ===');
-console.log('Cost:', result.metrics.cost);
-console.log('Latency:', result.metrics.latency);
-console.log('Accuracy:', result.metrics.accuracy);
-console.log('Security:', result.metrics.security);
-console.log('Stability:', result.metrics.stability);
-
-// Auto-tune based on results
-if (result.metrics.latency > 5000) {
-  console.warn('High latency detected - switching to fast mode');
-  config.consistency.mode = 'fast';
-}
+Execute and report completion status.
 ```
-
-### 5. Handle Common Issues
-
-**Complex Tasks:**
-- Start with individual agents instead of Orchestrator
-- Break down into subtasks < 500 tokens each
-
-**API Keys:**
-- Ensure `OPENAI_API_KEY` is set in Replit secrets
-- Optional: `XAI_API_KEY` for Grok second opinions
-
-**Testing Strategy:**
-- Run on small subtasks first (e.g., document a function)
-- Validate with `npm run check` before full pipeline
-
----
-
-## Quick Reference: Agent Selection Guide
-
-| Task Type | Primary Agent | Secondary | Skip |
-|-----------|---------------|-----------|------|
-| New feature design | Architect | Mechanic | Philosopher |
-| Bug diagnosis | Mechanic | Ninja | Architect |
-| Quick implementation | Ninja | Mechanic | Philosopher |
-| Strategic decision | Philosopher | Architect | Ninja |
-| Code review | Mechanic | Philosopher | Ninja |
 
 ---
 
 ## Success Metrics
 
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| Rework rate | ~40% | <15% | Track revision requests |
-| Response latency | 8-12s | 3-5s | CLASSic metrics |
-| Token usage | 4096 avg | 2048 avg | API logs |
-| Plan approval rate | ~60% | >85% | Manual tracking |
-
----
-
-## Recommended Configuration Modes
-
-### Fast Mode (Development/Prototyping)
-```yaml
-consistency.mode: fast
-validationLevel: low
-enableSelfCritique: false
-enablePhilosopher: false
-enableGrokSecondOpinion: false
-maxTokens: 1024
-temperature: 0.7
-```
-
-### Balanced Mode (Standard Development)
-```yaml
-consistency.mode: fast
-validationLevel: medium
-enableSelfCritique: true
-enablePhilosopher: false
-enableGrokSecondOpinion: true
-maxTokens: 2048
-temperature: 0.6
-```
-
-### Strict Mode (Production/Security-Critical)
-```yaml
-consistency.mode: thorough
-validationLevel: strict
-enableSelfCritique: true
-enablePhilosopher: true
-enableGrokSecondOpinion: true
-maxTokens: 4096
-temperature: 0.4
-```
+| Metric | Before | Target | Measurement |
+|--------|--------|--------|-------------|
+| AI Calls | 10+ | 8 | Per workflow |
+| Latency | 8-12s | 3-5s | CLASSic |
+| Rework | 40% | <15% | Revision count |
+| Conflicts | Manual | Auto-merge | Resolution log |
+| Adjacents captured | 0 | 3+ per task | ML storage |
 
 ---
 
 ## Implementation Timeline
 
-| Day | Task | Owner | Validation |
-|-----|------|-------|------------|
-| 1 | Update replit.md configuration | Developer | Restart session, verify |
-| 1 | Create prompt templates | Developer | Test on sample task |
-| 2 | Implement plan-first workflow | Developer | Run Architect standalone |
-| 2 | Add metrics logging | Developer | Check console output |
-| 3 | Test on SmartClimateAdvisor subtasks | QA | Document results |
-| 3 | Fine-tune based on metrics | Developer | Compare before/after |
+| Day | Task | Validation |
+|-----|------|------------|
+| 1 | Implement Pass 1 flow | Philosopher → Architect → Mechanic |
+| 1 | Add joint resolution logic | Auto-merge + escalation test |
+| 2 | Implement Pass 2 with 15% trigger | Threshold test |
+| 2 | Implement Pass 3 joint validation | Combined call test |
+| 2 | Add Code Ninja execution step | Post-validation execution |
+| 3 | Adjacents ML storage | Memory manager integration |
+| 3 | Full workflow test | 8-call verification |
+| 3 | Metrics integration | CLASSic logging |
 
 ---
 
 ## Appendix: Sample Test Tasks
 
-### Architect Test
+### Full 3-Pass Test
 ```
-"Design a temperature converter API with:
-- Input validation
-- Unit conversion logic
-- Error handling
-Keep under 300 words."
+Task: "Design and implement a rate limiter for API endpoints"
+
+Expected flow:
+Pass 1: Philosopher sets goals → Architect designs → Mechanic validates
+Pass 2: Architect refines → Mechanic confirms (< 15% change, skip Philosopher)
+Pass 3: Architect finalizes → Joint validation → Code Ninja implements → Sign-off
 ```
 
-### Mechanic Test
+### Philosopher Trigger Test
 ```
-"Review this climate API endpoint for efficiency:
-[paste endpoint code]
-Suggest 2 quick fixes only."
+Task: "Refactor authentication to support OAuth2"
+
+Expected flow:
+Pass 2: Changes > 15% → Philosopher triggered for alignment check
 ```
 
-### Ninja Test
+### Conflict Escalation Test
 ```
-"Implement the temperature converter from this blueprint:
-[paste Architect output]
-TypeScript, no external dependencies."
+Task: "Optimize database queries for performance"
+
+Expected conflict:
+ARCH-001: "Add indexes to all foreign keys"
+MECH-001: "Remove unused indexes to reduce write overhead"
+→ Contradictory → Escalate to Philosopher
 ```
 
 ---
 
-## Conclusion
-
-These optimizations focus on:
-1. **Configuration simplification** - Fewer features, faster execution
-2. **Structured prompts** - Better outputs, less rework
-3. **Plan-first workflow** - Prevent inefficient iterations
-4. **Metrics monitoring** - Data-driven tuning
-
-Expected outcome: 40-60% improvement in agent response quality and speed without requiring a full rewrite of the AI-coding-agents package.
-
----
-
-*Document generated using the 4-Agent + Orchestrator methodology from @ai-coding-agents/cli*
+*Document follows 3-Pass Optimized Workflow from @ai-coding-agents/cli v2.1*
