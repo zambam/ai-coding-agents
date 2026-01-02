@@ -1,4 +1,4 @@
-import type { AgentConfig, AgentPersona } from "./types";
+import type { AgentConfig, AgentPersona } from "./types.js";
 
 export const DEFAULT_AGENT_CONFIG: AgentConfig = {
   consistencyMode: "fast",

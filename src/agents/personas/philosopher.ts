@@ -1,5 +1,5 @@
-import { BaseAgent } from "./base-agent";
-import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types";
+import { BaseAgent } from "./base-agent.js";
+import type { AgentConfig, AgentInvocationResult, AgentType } from "../../types.js";
 
 export class Philosopher extends BaseAgent {
   readonly name = "The Philosopher";

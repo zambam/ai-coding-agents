@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { Orchestrator } from "./agents";
-import { FakeDataScanner, type ScanResult } from "./scanner";
-import { createLogger } from "./logger";
-import { DEFAULT_AGENT_CONFIG, STRICT_AGENT_CONFIG } from "./constants";
-import { initProject, type InitOptions, type InitResult } from "./init";
-import type { AgentType, AgentConfig, ExternalAgentType } from "./types";
+import { Orchestrator } from "./agents/index.js";
+import { FakeDataScanner, type ScanResult } from "./scanner.js";
+import { createLogger } from "./logger.js";
+import { DEFAULT_AGENT_CONFIG, STRICT_AGENT_CONFIG } from "./constants.js";
+import { initProject, type InitOptions, type InitResult } from "./init.js";
+import type { AgentType, AgentConfig, ExternalAgentType } from "./types.js";
 
 const logger = createLogger({ level: "info" });
 const API_BASE_URL = process.env.AI_AGENTS_API_URL || "http://localhost:5000";
@@ -53,6 +53,13 @@ interface InitProjectOptions {
   projectPath: string;
   projectId?: string;
   hubUrl?: string;
+  writeStorage?: boolean;
+  force?: boolean;
+}
+
+interface VerifyOptions {
+  offline?: boolean;
+  verbose?: boolean;
 }
 
 interface CommandResult {
@@ -511,11 +518,236 @@ fi
   return { success: false, exitCode: 1, message: "Invalid action" };
 }
 
+async function runVerify(options: VerifyOptions): Promise<CommandResult> {
+  const fs = await import("fs");
+  const path = await import("path");
+  const { execSync } = await import("child_process");
+  
+  interface VerifyCheck {
+    name: string;
+    status: 'pass' | 'fail' | 'skip';
+    message: string;
+    details?: string;
+  }
+  
+  const checks: VerifyCheck[] = [];
+  const configPath = path.join(process.cwd(), '.ai-agents.json');
+  let config: { projectId?: string; hubUrl?: string } | null = null;
+  
+  // Check 1: Config file exists and is valid JSON
+  if (fs.existsSync(configPath)) {
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      checks.push({ 
+        name: 'Config file', 
+        status: 'pass', 
+        message: `.ai-agents.json valid (project: ${config?.projectId || 'unknown'})`,
+        details: JSON.stringify(config, null, 2)
+      });
+    } catch (e) {
+      checks.push({ 
+        name: 'Config file', 
+        status: 'fail', 
+        message: 'Invalid JSON in .ai-agents.json',
+        details: e instanceof Error ? e.message : String(e)
+      });
+    }
+  } else {
+    checks.push({ 
+      name: 'Config file', 
+      status: 'fail', 
+      message: '.ai-agents.json not found. Run: npx ai-agents init' 
+    });
+  }
+  
+  // Check 2: CLI wrapper script exists and is executable
+  const wrapperPath = path.join(process.cwd(), 'scripts', 'ai-agents.sh');
+  if (fs.existsSync(wrapperPath)) {
+    try {
+      fs.accessSync(wrapperPath, fs.constants.X_OK);
+      checks.push({ 
+        name: 'CLI wrapper', 
+        status: 'pass', 
+        message: 'scripts/ai-agents.sh exists and is executable' 
+      });
+    } catch {
+      checks.push({ 
+        name: 'CLI wrapper', 
+        status: 'fail', 
+        message: 'scripts/ai-agents.sh exists but is not executable. Run: chmod +x scripts/ai-agents.sh' 
+      });
+    }
+  } else {
+    checks.push({ 
+      name: 'CLI wrapper', 
+      status: 'fail', 
+      message: 'scripts/ai-agents.sh not found' 
+    });
+  }
+  
+  // Check 3: Storage adapter exists
+  const storagePath = path.join(process.cwd(), 'server', 'agent-storage.ts');
+  if (fs.existsSync(storagePath)) {
+    const content = fs.readFileSync(storagePath, 'utf-8');
+    if (content.includes('IAgentStorage')) {
+      checks.push({ 
+        name: 'Storage adapter', 
+        status: 'pass', 
+        message: 'server/agent-storage.ts implements IAgentStorage' 
+      });
+    } else {
+      checks.push({ 
+        name: 'Storage adapter', 
+        status: 'fail', 
+        message: 'server/agent-storage.ts missing IAgentStorage implementation' 
+      });
+    }
+  } else {
+    checks.push({ 
+      name: 'Storage adapter', 
+      status: 'skip', 
+      message: 'server/agent-storage.ts not found (run init with --write-storage)' 
+    });
+  }
+  
+  // Check 4: Package exports resolve correctly (only if in a project with node_modules)
+  // Note: We only test the main export since express/drizzle subpaths require those peer deps
+  // Using ESM dynamic import since the package is ESM-only
+  const nodeModulesPath = path.join(process.cwd(), 'node_modules', 'ai-coding-agents');
+  if (fs.existsSync(nodeModulesPath)) {
+    const testPath = path.join(process.cwd(), '.ai-agents-test-imports.mjs');
+    try {
+      fs.writeFileSync(testPath, `
+        const pkg = await import('ai-coding-agents');
+        const required = ['Orchestrator', 'Architect', 'Mechanic', 'CodeNinja', 'Philosopher', 'logger', 'initProject'];
+        const missing = required.filter(k => !pkg[k]);
+        if (missing.length) {
+          console.error('Missing: ' + missing.join(', '));
+          process.exit(1);
+        }
+        console.log('ok');
+      `);
+      execSync(`node ${testPath}`, { encoding: 'utf-8' });
+      checks.push({ 
+        name: 'Package exports', 
+        status: 'pass', 
+        message: 'Core package exports resolve correctly' 
+      });
+    } catch (e) {
+      checks.push({ 
+        name: 'Package exports', 
+        status: 'fail', 
+        message: 'Package imports failed',
+        details: e instanceof Error ? e.message : String(e)
+      });
+    } finally {
+      if (fs.existsSync(testPath)) fs.unlinkSync(testPath);
+    }
+  } else {
+    checks.push({ 
+      name: 'Package exports', 
+      status: 'skip', 
+      message: 'ai-coding-agents not installed in node_modules' 
+    });
+  }
+  
+  // Check 5: Hub connectivity (unless offline)
+  if (!options.offline && config?.hubUrl) {
+    try {
+      const healthUrl = `${config.hubUrl}/api/agents/health`;
+      const response = await fetch(healthUrl, { 
+        method: 'GET', 
+        signal: AbortSignal.timeout(5000) 
+      });
+      if (response.ok) {
+        const data = await response.json() as { status?: string };
+        checks.push({ 
+          name: 'Hub connection', 
+          status: 'pass', 
+          message: `Hub reachable at ${config.hubUrl} (status: ${data.status || 'ok'})` 
+        });
+      } else {
+        checks.push({ 
+          name: 'Hub connection', 
+          status: 'fail', 
+          message: `Hub returned HTTP ${response.status}` 
+        });
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      checks.push({ 
+        name: 'Hub connection', 
+        status: 'fail', 
+        message: `Hub unreachable: ${msg}` 
+      });
+    }
+  } else if (options.offline) {
+    checks.push({ 
+      name: 'Hub connection', 
+      status: 'skip', 
+      message: 'Skipped (--offline mode)' 
+    });
+  } else {
+    checks.push({ 
+      name: 'Hub connection', 
+      status: 'skip', 
+      message: 'No hubUrl in config' 
+    });
+  }
+  
+  // Check 6: Git hooks installed
+  const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
+  if (fs.existsSync(hookPath)) {
+    const content = fs.readFileSync(hookPath, 'utf-8');
+    if (content.includes('AI Agent Monitor')) {
+      checks.push({ 
+        name: 'Git hooks', 
+        status: 'pass', 
+        message: 'AI agents git hooks installed' 
+      });
+    } else {
+      checks.push({ 
+        name: 'Git hooks', 
+        status: 'skip', 
+        message: 'post-commit hook exists but not for ai-agents' 
+      });
+    }
+  } else {
+    checks.push({ 
+      name: 'Git hooks', 
+      status: 'skip', 
+      message: 'Git hooks not installed (run: npx ai-agents hooks install)' 
+    });
+  }
+  
+  // Print results
+  console.log('\n=== AI Agents Setup Verification ===\n');
+  let allPassed = true;
+  for (const check of checks) {
+    const icon = check.status === 'pass' ? '[OK]  ' : check.status === 'fail' ? '[FAIL]' : '[SKIP]';
+    console.log(`${icon} ${check.name}: ${check.message}`);
+    if (options.verbose && check.details) {
+      console.log(`       Details: ${check.details}`);
+    }
+    if (check.status === 'fail') allPassed = false;
+  }
+  
+  const failCount = checks.filter(c => c.status === 'fail').length;
+  const passCount = checks.filter(c => c.status === 'pass').length;
+  const skipCount = checks.filter(c => c.status === 'skip').length;
+  
+  console.log(`\nSummary: ${passCount} passed, ${failCount} failed, ${skipCount} skipped`);
+  console.log(allPassed ? 'Setup is complete!' : `${failCount} check(s) need attention.`);
+  
+  return { success: allPassed, exitCode: allPassed ? 0 : 1 };
+}
+
 async function runInit(options: InitProjectOptions): Promise<CommandResult> {
   console.log("\n=== AI Coding Agents Project Initialization ===\n");
   console.log(`Framework: ${options.framework}`);
   console.log(`ORM: ${options.orm}`);
   console.log(`Path: ${options.projectPath}`);
+  if (options.writeStorage) console.log(`Write Storage: enabled`);
   
   try {
     const result = await initProject({
@@ -523,7 +755,9 @@ async function runInit(options: InitProjectOptions): Promise<CommandResult> {
       orm: options.orm,
       projectPath: options.projectPath,
       projectId: options.projectId,
-      hubUrl: options.hubUrl
+      hubUrl: options.hubUrl,
+      writeStorage: options.writeStorage,
+      force: options.force
     });
     
     if (!result.success) {
@@ -571,6 +805,7 @@ Commands:
   analytics [projectId]      View failure analytics
   hooks <action>             Manage git hooks (install/uninstall/status)
   init                       Initialize project for agent reporting
+  verify                     Verify project setup is correct
   help                       Show this help message
 
 Options for 'invoke':
@@ -607,6 +842,12 @@ Options for 'init':
   --path <dir>               Project path (default: current directory)
   --project-id <id>          Project identifier (default: directory name)
   --hub-url <url>            Hub server URL (default: http://localhost:5000)
+  --write-storage            Generate server/agent-storage.ts scaffold
+  --force                    Overwrite existing files without prompting
+
+Options for 'verify':
+  --offline                  Skip hub connection check
+  --verbose                  Show detailed output for each check
 
 Environment Variables:
   OPENAI_API_KEY             Required for invoke command
@@ -784,6 +1025,8 @@ export async function parseArgs(args: string[]): Promise<CommandResult> {
     let projectPath = process.cwd();
     let projectId: string | undefined;
     let hubUrl: string | undefined;
+    let writeStorage = false;
+    let force = false;
     
     for (let i = 1; i < args.length; i++) {
       if (args[i] === "--framework" && args[i + 1]) {
@@ -801,10 +1044,29 @@ export async function parseArgs(args: string[]): Promise<CommandResult> {
       } else if (args[i] === "--hub-url" && args[i + 1]) {
         hubUrl = args[i + 1];
         i++;
+      } else if (args[i] === "--write-storage") {
+        writeStorage = true;
+      } else if (args[i] === "--force") {
+        force = true;
       }
     }
     
-    return runInit({ framework, orm, projectPath, projectId, hubUrl });
+    return runInit({ framework, orm, projectPath, projectId, hubUrl, writeStorage, force });
+  }
+  
+  if (command === "verify") {
+    let offline = false;
+    let verbose = false;
+    
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === "--offline") {
+        offline = true;
+      } else if (args[i] === "--verbose") {
+        verbose = true;
+      }
+    }
+    
+    return runVerify({ offline, verbose });
   }
   
   console.error(`Error: Unknown command '${command}'`);

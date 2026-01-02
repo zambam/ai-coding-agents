@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { AgentConfig, ReasoningStep, ConsistencyMode, ReasoningPath, ConsistencyResult, SelfCritiqueResult } from "../types";
+import type { AgentConfig, ReasoningStep, ConsistencyMode, ReasoningPath, ConsistencyResult, SelfCritiqueResult } from "../types.js";
 
 const COT_SYSTEM_SUFFIX = `
 You MUST structure your response using Chain-of-Thought reasoning.

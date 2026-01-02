@@ -1,6 +1,6 @@
-import type { AgentResponse, AgentConfig, CLASSicMetrics } from "./types";
-import { ValidationError, SecurityError, AgentErrorCode, type ErrorContext } from "./errors";
-import { logger } from "./logger";
+import type { AgentResponse, AgentConfig, CLASSicMetrics } from "./types.js";
+import { ValidationError, SecurityError, AgentErrorCode, type ErrorContext } from "./errors.js";
+import { logger } from "./logger.js";
 
 export interface ValidationResult {
   passed: string[];

@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import type { ReplitMdConfig, AgentConfig } from "../types";
-import { DEFAULT_AGENT_CONFIG } from "../constants";
+import type { ReplitMdConfig, AgentConfig } from "../types.js";
+import { DEFAULT_AGENT_CONFIG } from "../constants.js";
 
 export class ReplitMdParser {
   private configPath: string;

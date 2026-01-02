@@ -1,7 +1,7 @@
 import pino from "pino";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
-import type { AgentType, CLASSicMetrics } from "./types";
+import type { AgentType, CLASSicMetrics } from "./types.js";
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 export type LogDestination = "stdout" | "file" | "http";

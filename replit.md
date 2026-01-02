@@ -88,6 +88,17 @@ Before any commit:
 
 ## Recent Changes
 
+- **NPM Package Build System Fixed (12/12 Sandbox Tests Passing)**
+  - Fixed TypeScript incremental build by adding `incremental: false` to tsconfig.package.json
+  - Added `.js` extensions to all ESM imports across 20+ files in src/
+  - Added pino-pretty as runtime dependency
+  - Configured express/drizzle-orm as optional peer dependencies with peerDependenciesMeta
+  - Removed express-router and drizzle-schema exports from main index.ts (use subpath imports)
+  - Fixed verify command to use ESM dynamic import instead of CommonJS require
+  - Removed "require" exports from package.json (ESM-only package)
+  - Sandbox tests verify: build, pack, install, CLI commands, config files, export resolution
+  - **Note**: Package is ESM-only; consumers must use `import` syntax, not `require()`
+
 - **AI Agent Monitor Implementation COMPLETE (Phases 1-5)**
   - **Phase 1**: Database schema added (agentReports, projectGuidelines, failurePatterns tables) in shared/schema.ts
     - 8 failure categories: security_gap, logic_error, context_blindness, outdated_api, missing_edge_case, poor_readability, broke_existing, hallucinated_code

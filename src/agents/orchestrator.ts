@@ -1,6 +1,6 @@
-import { Architect, Mechanic, CodeNinja, Philosopher } from "./personas";
-import type { AgentConfig, AgentType, AgentInvocationResult } from "../types";
-import { DEFAULT_AGENT_CONFIG } from "../constants";
+import { Architect, Mechanic, CodeNinja, Philosopher } from "./personas/index.js";
+import type { AgentConfig, AgentType, AgentInvocationResult } from "../types.js";
+import { DEFAULT_AGENT_CONFIG } from "../constants.js";
 
 export class Orchestrator {
   private config: AgentConfig;

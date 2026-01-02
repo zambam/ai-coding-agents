@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { ReasoningStep } from "../types";
+import type { ReasoningStep } from "../types.js";
 
 export interface GrokResponse {
   content: string;

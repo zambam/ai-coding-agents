@@ -1,11 +1,11 @@
-import { PromptEngine } from "../prompt-engine";
-import { Evaluator } from "../evaluator";
-import { ReplitMdParser } from "../replit-md-parser";
-import { getGrokSecondOpinion } from "../grok-client";
-import { logger } from "../../logger";
-import { hashPrompt } from "../../errors";
-import { enforceValidation, enforceClassicThresholds } from "../../validation";
-import type { AgentConfig, AgentResponse, ReasoningStep, GrokSecondOpinion, AgentInvocationResult, AgentType } from "../../types";
+import { PromptEngine } from "../prompt-engine.js";
+import { Evaluator } from "../evaluator.js";
+import { ReplitMdParser } from "../replit-md-parser.js";
+import { getGrokSecondOpinion } from "../grok-client.js";
+import { logger } from "../../logger.js";
+import { hashPrompt } from "../../errors.js";
+import { enforceValidation, enforceClassicThresholds } from "../../validation.js";
+import type { AgentConfig, AgentResponse, ReasoningStep, GrokSecondOpinion, AgentInvocationResult, AgentType } from "../../types.js";
 
 export abstract class BaseAgent {
   protected promptEngine: PromptEngine;

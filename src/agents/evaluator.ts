@@ -1,4 +1,4 @@
-import type { CLASSicMetrics, ValidationLevel, AgentResponse, ValidationResult } from "../types";
+import type { CLASSicMetrics, ValidationLevel, AgentResponse, ValidationResult } from "../types.js";
 
 const COST_PER_1K_INPUT = 0.0025;
 const COST_PER_1K_OUTPUT = 0.01;

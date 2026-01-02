@@ -18,16 +18,28 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./express": {
+      "types": "./dist/express-router.d.ts",
+      "import": "./dist/express-router.js"
+    },
+    "./drizzle": {
+      "types": "./dist/drizzle-schema.d.ts",
+      "import": "./dist/drizzle-schema.js"
+    },
+    "./init": {
+      "types": "./dist/init.d.ts",
+      "import": "./dist/init.js"
     },
     "./agents": {
-      "import": "./dist/agents/index.js",
-      "types": "./dist/agents/index.d.ts"
+      "types": "./dist/agents/index.d.ts",
+      "import": "./dist/agents/index.js"
     },
     "./scanner": {
-      "import": "./dist/scanner.js",
-      "types": "./dist/scanner.d.ts"
+      "types": "./dist/scanner.d.ts",
+      "import": "./dist/scanner.js"
     }
   },
   "files": [
@@ -39,7 +51,12 @@
     "prepublishOnly": "npm run build:package"
   },
   "peerDependencies": {
-    "openai": "^4.0.0 || ^6.0.0"
+    "express": "^4.0.0",
+    "drizzle-orm": "^0.30.0"
+  },
+  "peerDependenciesMeta": {
+    "express": { "optional": true },
+    "drizzle-orm": { "optional": true }
   },
   "repository": {
     "type": "git",
@@ -52,6 +69,8 @@
   "dependencies": {
     "openai": "^6.15.0",
     "pino": "^10.1.0",
+    "pino-pretty": "^10.0.0",
+    "uuid": "^9.0.0",
     "zod": "^3.25.0",
     "zod-validation-error": "^3.5.0"
   }

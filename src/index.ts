@@ -8,13 +8,13 @@ export {
   CodeNinja, 
   Philosopher,
   BaseAgent,
-} from "./agents";
+} from "./agents/index.js";
 
 // Core utilities
-export { PromptEngine } from "./agents/prompt-engine";
-export { Evaluator } from "./agents/evaluator";
-export { ReplitMdParser } from "./agents/replit-md-parser";
-export { getGrokSecondOpinion, setGrokClient } from "./agents/grok-client";
+export { PromptEngine } from "./agents/prompt-engine.js";
+export { Evaluator } from "./agents/evaluator.js";
+export { ReplitMdParser } from "./agents/replit-md-parser.js";
+export { getGrokSecondOpinion, setGrokClient } from "./agents/grok-client.js";
 
 // Logging and debugging
 export { 
@@ -26,7 +26,7 @@ export {
   type LogContext, 
   type LogEntry,
   type LoggerConfig as PinoLoggerConfig,
-} from "./logger";
+} from "./logger.js";
 export { 
   AgentError,
   ValidationError,
@@ -37,7 +37,7 @@ export {
   createRunId,
   hashPrompt,
   type ErrorContext,
-} from "./errors";
+} from "./errors.js";
 
 // Validation and enforcement
 export {
@@ -51,14 +51,14 @@ export {
   type CLASSicThresholds,
   type FakeDataCheckResult,
   type SecurityCheckResult,
-} from "./validation";
+} from "./validation.js";
 
 // Configuration constants
 export { 
   DEFAULT_AGENT_CONFIG, 
   STRICT_AGENT_CONFIG,
   AGENT_PERSONAS,
-} from "./constants";
+} from "./constants.js";
 
 // Types
 export type {
@@ -98,7 +98,7 @@ export type {
   RunDiagnostics,
   ExportedRunBundle,
   DiagnosticsOptions,
-} from "./types";
+} from "./types.js";
 
 export { 
   OUTCOME_STATUSES, 
@@ -106,9 +106,9 @@ export {
   FEEDBACK_TAGS,
   DEFAULT_LOGGER_CONFIG,
   DEFAULT_DIAGNOSTICS_OPTIONS,
-} from "./types";
+} from "./types.js";
 
-export type { GrokResponse } from "./agents/grok-client";
+export type { GrokResponse } from "./agents/grok-client.js";
 
 // QA Scanner
 export { 
@@ -117,7 +117,7 @@ export {
   type ScannerOptions,
   type ScanIssue,
   type ScanResult,
-} from "./scanner";
+} from "./scanner.js";
 
 // Client SDK for ML reporting
 export {
@@ -131,36 +131,12 @@ export {
   type ReportResult,
   type Guidelines,
   type AnalyticsResult,
-} from "./client-sdk";
+} from "./client-sdk.js";
 
-// Express Router Factory (for host projects)
-export {
-  createAgentRouter,
-  detectFailure,
-  categorizeFailure,
-  type IAgentStorage,
-  type AgentReportInput,
-  type AgentReport,
-  type AgentAnalytics,
-  type AgentLogInput,
-  type AgentLog,
-  type LogQueryOptions,
-  type LogStats,
-  type ProjectGuidelines,
-} from "./express-router";
-
-// Drizzle Schema (for host projects)
-export {
-  agentReportsTable,
-  agentLogsTable,
-  projectGuidelinesTable,
-  failurePatternsTable,
-  FAILURE_CATEGORIES,
-  EXTERNAL_AGENT_TYPES,
-  SEVERITY_LEVELS,
-  type FailureCategory,
-  type SeverityLevel,
-} from "./drizzle-schema";
+// Express Router and Drizzle Schema are available as separate subpath imports:
+// import { createAgentRouter } from 'ai-coding-agents/express';
+// import { agentReportsTable } from 'ai-coding-agents/drizzle';
+// These are not re-exported here to avoid requiring express/drizzle-orm at import time.
 
 // Project Initialization
 export {
@@ -168,4 +144,4 @@ export {
   generateStorageScaffold,
   type InitOptions,
   type InitResult,
-} from "./init";
+} from "./init.js";
