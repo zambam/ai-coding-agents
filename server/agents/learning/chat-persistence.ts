@@ -6,13 +6,17 @@ export interface ChatPersistenceConfig {
   saveIntervalMs: number;
   chatFilePath: string;
   maxEntriesInFile: number;
+  ttlMs: number;
   enabled: boolean;
 }
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const DEFAULT_CONFIG: ChatPersistenceConfig = {
   saveIntervalMs: 5000,
   chatFilePath: "/tmp/ml-chat-history.json",
   maxEntriesInFile: 500,
+  ttlMs: ONE_DAY_MS,
   enabled: true,
 };
 
@@ -55,15 +59,33 @@ export class ChatPersistenceService {
         const data = JSON.parse(content) as PersistedChatData;
         
         if (data.entries && Array.isArray(data.entries)) {
-          this.entries = data.entries.map(e => ({
-            ...e,
-            timestamp: new Date(e.timestamp),
-          }));
-          console.log(`[ChatPersistence] Loaded ${this.entries.length} existing entries`);
+          const now = Date.now();
+          const validEntries = data.entries
+            .map(e => ({
+              ...e,
+              timestamp: new Date(e.timestamp),
+            }))
+            .filter(e => now - e.timestamp.getTime() < this.config.ttlMs);
+          
+          const expiredCount = data.entries.length - validEntries.length;
+          this.entries = validEntries;
+          
+          console.log(`[ChatPersistence] Loaded ${validEntries.length} entries (${expiredCount} expired, TTL: ${this.config.ttlMs / 3600000}h)`);
         }
       }
     } catch (error) {
       console.warn("[ChatPersistence] Could not load existing chat history:", error);
+    }
+  }
+
+  private pruneExpiredEntries(): void {
+    const now = Date.now();
+    const before = this.entries.length;
+    this.entries = this.entries.filter(e => now - e.timestamp.getTime() < this.config.ttlMs);
+    const pruned = before - this.entries.length;
+    if (pruned > 0) {
+      console.log(`[ChatPersistence] Pruned ${pruned} expired entries`);
+      this.dirty = true;
     }
   }
 
@@ -78,6 +100,7 @@ export class ChatPersistenceService {
     }
 
     this.saveInterval = setInterval(() => {
+      this.pruneExpiredEntries();
       this.saveToFile();
     }, this.config.saveIntervalMs);
 
@@ -212,6 +235,33 @@ export class ChatPersistenceService {
   forceSave(): void {
     this.dirty = true;
     this.saveToFile();
+  }
+
+  migrateEntries(entries: ConversationEntry[]): number {
+    const now = Date.now();
+    let migrated = 0;
+    
+    for (const entry of entries) {
+      const timestamp = new Date(entry.timestamp);
+      if (now - timestamp.getTime() < this.config.ttlMs) {
+        const exists = this.entries.some(e => e.id === entry.id);
+        if (!exists) {
+          this.entries.push({ ...entry, timestamp });
+          migrated++;
+        }
+      }
+    }
+    
+    if (migrated > 0) {
+      this.entries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      if (this.entries.length > this.config.maxEntriesInFile) {
+        this.entries = this.entries.slice(-this.config.maxEntriesInFile);
+      }
+      this.dirty = true;
+      console.log(`[ChatPersistence] Migrated ${migrated} entries`);
+    }
+    
+    return migrated;
   }
 }
 

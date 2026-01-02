@@ -8,10 +8,13 @@ import { initializeChatPersistence } from "./agents/learning/chat-persistence";
 
 const app = express();
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 const chatPersistence = initializeChatPersistence({
   saveIntervalMs: 5000,
   chatFilePath: "/tmp/ml-chat-history.json",
   maxEntriesInFile: 500,
+  ttlMs: ONE_DAY_MS,
   enabled: true,
 });
 
