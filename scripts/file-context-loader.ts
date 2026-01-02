@@ -85,9 +85,14 @@ export function loadFileContent(filePath: string): FileContext {
   }
 }
 
+const MIN_CONTENT_BYTES = 50;
+
 export function loadTaskContext(task: string, additionalFiles: string[] = []): LoadResult {
   const detectedPaths = extractFilePaths(task);
-  const allPaths = [...new Set([...detectedPaths, ...additionalFiles])];
+  const normalizedAdditional = additionalFiles
+    .map(f => f.trim())
+    .filter(f => f.length > 0);
+  const allPaths = [...new Set([...detectedPaths, ...normalizedAdditional])];
   
   const files: FileContext[] = [];
   const errors: string[] = [];
