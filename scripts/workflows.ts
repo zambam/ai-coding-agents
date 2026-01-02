@@ -1,5 +1,6 @@
 import { Orchestrator } from "../server/agents/orchestrator";
 import { Architect, Mechanic, CodeNinja, Philosopher } from "../server/agents/personas";
+import { ThreePassWorkflow } from "../server/agents/three-pass-workflow";
 import { DEFAULT_AGENT_CONFIG } from "../shared/schema";
 import { buildContextPrompt } from "./file-context-loader";
 
@@ -142,4 +143,19 @@ export async function philosopherOnly(task: string, files: string[] = []) {
   const contextTask = buildContextPrompt(task, files, true);
   const philosopher = new Philosopher(RELAXED_CONFIG);
   return philosopher.invoke(contextTask);
+}
+
+export const THREE_PASS_CONFIG = {
+  philosopherTriggerThreshold: 0.15,
+  autoMergeSimpleConflicts: true,
+  storeAdjacentsInML: true,
+  documentAdjacentsInOutput: true,
+};
+
+export async function threePassWorkflow(task: string, files: string[] = []) {
+  ensureApiKey();
+  const contextTask = buildContextPrompt(task, files, true);
+  const workflow = new ThreePassWorkflow(OPTIMIZED_CONFIG, THREE_PASS_CONFIG);
+  const output = await workflow.execute(contextTask);
+  return { output, formatted: workflow.formatOutput(output) };
 }

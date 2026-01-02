@@ -183,6 +183,9 @@ Multi-agent workflow scripts for development and testing:
 # Interactive mode - menu-driven agent selection
 npx tsx scripts/run-workflow.ts interactive
 
+# 3-Pass optimized workflow (8 AI calls) - RECOMMENDED
+npx tsx scripts/run-workflow.ts three-pass "Design a rate limiter for API endpoints"
+
 # Quick review - Architect + Mechanic (2 agents)
 npx tsx scripts/run-workflow.ts quick-review "Design a REST API"
 
@@ -200,6 +203,7 @@ npx tsx scripts/run-workflow.ts diagnose "TypeError in auth.js"
 ```
 
 Individual scripts:
+- `scripts/three-pass.ts` - 3-Pass optimized workflow (8 calls) [NEW]
 - `scripts/quick-review.ts` - Architect + Mechanic
 - `scripts/quick-implement.ts` - Code Ninja + Mechanic
 - `scripts/full-pipeline.ts` - All 4 agents

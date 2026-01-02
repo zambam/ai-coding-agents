@@ -1,6 +1,7 @@
 #!/usr/bin/env npx tsx
 import { Orchestrator } from "../server/agents/orchestrator";
 import { Architect, Mechanic, CodeNinja, Philosopher } from "../server/agents/personas";
+import { ThreePassWorkflow } from "../server/agents/three-pass-workflow";
 import { DEFAULT_AGENT_CONFIG } from "../shared/schema";
 import { buildContextPrompt, extractFilePaths, loadTaskContext, validateContextLoaded } from "./file-context-loader";
 import * as readline from "readline";
@@ -20,6 +21,13 @@ const STRICT_CONFIG = {
   maxTokens: 4096,
   enablePhilosopher: true,
   enableSelfCritique: true,
+};
+
+const THREE_PASS_WORKFLOW_CONFIG = {
+  philosopherTriggerThreshold: 0.15,
+  autoMergeSimpleConflicts: true,
+  storeAdjacentsInML: true,
+  documentAdjacentsInOutput: true,
 };
 
 function ensureApiKey(): void {
@@ -217,6 +225,24 @@ async function diagnose(errorDescription: string, contextFiles: string[] = []) {
   return diagnosis;
 }
 
+async function threePass(task: string, additionalFiles: string[] = []) {
+  console.log("\n========================================");
+  console.log("  3-PASS OPTIMIZED WORKFLOW (8 calls)");
+  console.log("========================================\n");
+  ensureApiKey();
+
+  const contextTask = buildContextPrompt(task, additionalFiles, true);
+  const workflow = new ThreePassWorkflow(RELAXED_CONFIG, THREE_PASS_WORKFLOW_CONFIG);
+  
+  const output = await workflow.execute(contextTask);
+  const formatted = workflow.formatOutput(output);
+  
+  const outputPath = saveReviewOutput("three-pass", task, { response: { recommendation: formatted } });
+  console.log(`\nOutput saved to: ${outputPath}\n`);
+  
+  return { output, formatted };
+}
+
 async function interactive() {
   console.log("\n=== AI Agents Interactive Mode ===\n");
   console.log("Available commands:");
@@ -224,10 +250,11 @@ async function interactive() {
   console.log("  2. quick-implement <task>  - Code Ninja + Mechanic");
   console.log("  3. pipeline <task>         - Full 4-agent pipeline");
   console.log("  4. multi-step <task>       - Iterative refinement");
-  console.log("  5. diagnose <error>        - Debug an issue");
-  console.log("  6. exit                    - Quit\n");
+  console.log("  5. three-pass <task>       - 3-Pass optimized workflow (8 calls)");
+  console.log("  6. diagnose <error>        - Debug an issue");
+  console.log("  7. exit                    - Quit\n");
   console.log("NOTE: Include file paths in your task and they will be auto-loaded.\n");
-  console.log("Example: quick-review Analyze docs/ML_TRAINING_TWIN_ARCHITECTURE_REVIEW.md\n");
+  console.log("Example: three-pass Design a rate limiter for API endpoints\n");
 
   while (true) {
     const input = await prompt("\n> ");
@@ -277,6 +304,16 @@ async function interactive() {
           break;
 
         case "5":
+        case "three-pass":
+          if (!args) {
+            const task = await prompt("Enter task (include file paths): ");
+            await threePass(task);
+          } else {
+            await threePass(args);
+          }
+          break;
+
+        case "6":
         case "diagnose":
           if (!args) {
             const error = await prompt("Enter error description: ");
@@ -286,7 +323,7 @@ async function interactive() {
           }
           break;
 
-        case "6":
+        case "7":
         case "exit":
         case "quit":
           console.log("Goodbye!");
@@ -383,6 +420,17 @@ async function main() {
       await diagnose(task, files);
       break;
 
+    case "three-pass":
+    case "3-pass":
+      if (!task) {
+        console.error("Usage: npx tsx scripts/run-workflow.ts three-pass <task> [--files file1,file2]");
+        console.error("\nExample:");
+        console.error('  npx tsx scripts/run-workflow.ts three-pass "Design a rate limiter for API endpoints"');
+        process.exit(1);
+      }
+      await threePass(task, files);
+      break;
+
     default:
       console.log("AI Agents Workflow Runner\n");
       console.log("Usage: npx tsx scripts/run-workflow.ts <mode> <task> [options]\n");
@@ -392,6 +440,7 @@ async function main() {
       console.log("  quick-implement - Code Ninja + Mechanic (2 agents)");
       console.log("  pipeline        - Full 4-agent pipeline");
       console.log("  multi-step      - Iterative refinement (3+ steps)");
+      console.log("  three-pass      - 3-Pass optimized workflow (8 calls) [NEW]");
       console.log("  code-review     - Review a specific file");
       console.log("  diagnose        - Debug an error with Mechanic\n");
       console.log("Options:");
@@ -399,9 +448,9 @@ async function main() {
       console.log("  --steps <N>     - Number of iterations for multi-step (default: 3)\n");
       console.log("IMPORTANT: Include file paths in your task and they will be auto-loaded.\n");
       console.log("Examples:");
+      console.log('  npx tsx scripts/run-workflow.ts three-pass "Design a rate limiter for API endpoints"');
       console.log('  npx tsx scripts/run-workflow.ts quick-review "Analyze docs/PROPOSAL.md for gaps"');
       console.log('  npx tsx scripts/run-workflow.ts multi-step "Review server/routes.ts" --steps 5');
-      console.log('  npx tsx scripts/run-workflow.ts pipeline "Build auth using patterns from src/auth.ts"');
       process.exit(0);
   }
 }
@@ -412,4 +461,4 @@ main().catch((error) => {
   process.exit(1);
 });
 
-export { quickReview, quickImplement, fullPipeline, multiStepReview, codeReview, diagnose };
+export { quickReview, quickImplement, fullPipeline, multiStepReview, codeReview, diagnose, threePass };
