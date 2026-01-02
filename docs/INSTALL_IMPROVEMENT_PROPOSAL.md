@@ -1,0 +1,220 @@
+# Client Installation Improvement Proposal
+
+**Goal**: Reduce client setup time from 30-45 minutes to 5 minutes with clear, automated tooling.
+
+---
+
+## Current Issues Found
+
+### 1. Documentation Fragmentation
+
+| Document | Problem |
+|----------|---------|
+| README.md | Lists many features but no "start here" flow |
+| PUBLISHING_PROPOSAL.md | Offers Option A/B choice before user can try anything |
+| INTEGRATION_GUIDE.md | Manual endpoint/schema setup despite router factory existing |
+| Client Feedback | Reports 30-45 min manual integration |
+
+**Result**: Users bounce between docs, unclear which path to follow.
+
+### 2. Init Command Under-Documented
+
+Current `npx ai-agents init` documentation:
+- Only shows `--framework express --orm drizzle --hub-url` options
+- No explanation of generated files
+- No guidance for non-Express or non-Drizzle projects
+- No post-init verification steps
+
+### 3. Missing Verification Command
+
+No single "did it work?" test documented. Users must guess which command confirms success.
+
+### 4. Templates Not Linked
+
+- `templates/` directory exists but not referenced in docs
+- `scripts/ai-agents.sh` generated but not explained
+- Schema snippets exist but no copy-paste ready blocks
+
+### 5. Integration Guide Contradicts v1.2.0
+
+Guide still instructs manual endpoint creation despite:
+- `createAgentRouter()` available
+- `agentReportsTable` exported
+- `IAgentStorage` interface exported
+
+---
+
+## Proposed Solutions
+
+### Solution 1: Create QUICKSTART.md (5-Minute Guide)
+
+```markdown
+# 5-Minute Quickstart
+
+## Prerequisites
+- Node.js 18+
+- Express project with Drizzle ORM
+- Hub URL (your deployed ai-coding-agents service)
+
+## Step 1: Install (30 seconds)
+npm install github:zambam/ai-coding-agents
+
+## Step 2: Initialize (30 seconds)
+npx ai-agents init \
+  --framework express \
+  --orm drizzle \
+  --hub-url https://your-hub.replit.app
+
+## Step 3: Add Schema (1 minute)
+// shared/schema.ts
+import { agentReportsTable, agentLogsTable } from 'ai-coding-agents';
+export { agentReportsTable, agentLogsTable };
+
+## Step 4: Add Routes (1 minute)
+// server/routes.ts
+import { createAgentRouter } from 'ai-coding-agents';
+app.use('/api/agents', createAgentRouter(storage));
+
+## Step 5: Implement Storage (2 minutes)
+// Copy from templates/storage-adapter.ts
+// Implement 3 required methods
+
+## Step 6: Verify (30 seconds)
+npx ai-agents verify
+
+## Done!
+```
+
+### Solution 2: Enhance Init Command
+
+Add these capabilities to `npx ai-agents init`:
+
+```bash
+# Current
+npx ai-agents init --framework express --orm drizzle
+
+# Proposed additions
+npx ai-agents init \
+  --framework express \
+  --orm drizzle \
+  --hub-url https://hub.example.com \
+  --generate-storage      # Generate storage adapter template
+  --generate-routes       # Generate routes file
+  --run-migrations        # Run Drizzle migrations
+  --verify                # Run verification after setup
+```
+
+**Generated files:**
+| File | Purpose |
+|------|---------|
+| `.ai-agents.json` | Project configuration |
+| `scripts/ai-agents.sh` | CLI wrapper with env vars |
+| `templates/storage-adapter.ts` | Storage implementation template |
+| `templates/agent-routes.ts` | Route registration template |
+| `AGENT_RULES.md` | Initial rules file (synced from hub) |
+
+### Solution 3: Add Verify Command
+
+```bash
+npx ai-agents verify
+```
+
+**Checks performed:**
+1. `.ai-agents.json` exists and valid
+2. Hub URL reachable (`GET /api/agents/health`)
+3. Required env vars set (`AI_AGENTS_API_URL`)
+4. Reports endpoint responds (`POST /api/agents/external/report` with test)
+5. Analytics endpoint responds (`GET /api/agents/monitor/analytics`)
+
+**Output:**
+```
+AI Agents Setup Verification
+============================
+[PASS] .ai-agents.json found
+[PASS] Hub URL reachable: https://your-hub.replit.app
+[PASS] Environment configured
+[PASS] Report endpoint working
+[PASS] Analytics endpoint working
+
+All checks passed! Your project is ready.
+```
+
+### Solution 4: Create Templates Directory
+
+```
+npm-package/
+  templates/
+    storage-adapter.ts      # IAgentStorage implementation
+    agent-routes.ts         # Express route registration
+    drizzle-migration.ts    # Schema migration script
+    .ai-agents.json         # Config file template
+    ai-agents.sh            # CLI wrapper script
+    github-action.yml       # CI workflow
+    pre-commit.sh           # Git hook
+```
+
+### Solution 5: Update Documentation
+
+**README.md changes:**
+- Add "5-Minute Quickstart" section at top
+- Link to QUICKSTART.md for detailed steps
+- Remove redundant manual setup instructions
+
+**INTEGRATION_GUIDE.md changes:**
+- Remove manual endpoint creation sections
+- Reference router factory and schema exports
+- Add "Verify Installation" section
+
+**PUBLISHING_PROPOSAL.md changes:**
+- Mark as "internal documentation" 
+- Reference QUICKSTART.md for client setup
+
+---
+
+## Implementation Checklist
+
+### Phase 1: Documentation (Priority 1)
+- [ ] Create `docs/QUICKSTART.md` with step-by-step guide
+- [ ] Add "Quick Start" section to README.md linking to QUICKSTART.md
+- [ ] Update INTEGRATION_GUIDE.md to remove manual steps
+- [ ] Add init command option reference to README
+
+### Phase 2: Templates (Priority 1)
+- [ ] Create `npm-package/templates/` directory
+- [ ] Add `storage-adapter.ts` template
+- [ ] Add `agent-routes.ts` template  
+- [ ] Add `.ai-agents.json` template
+- [ ] Add `ai-agents.sh` template
+
+### Phase 3: CLI Enhancements (Priority 2)
+- [ ] Add `npx ai-agents verify` command
+- [ ] Add `--generate-storage` flag to init
+- [ ] Add `--generate-routes` flag to init
+- [ ] Add `--verify` flag to init (runs verify after)
+
+### Phase 4: Init Command Output (Priority 2)
+- [ ] Print clear next steps after init
+- [ ] Print generated file locations
+- [ ] Print verification command to run
+
+---
+
+## Expected Outcome
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Setup time | 30-45 min | 5 min |
+| Files to manually create | 5+ | 0-1 |
+| Commands to run | 10+ | 3 |
+| Documentation pages to read | 3+ | 1 |
+| Verification method | None | `npx ai-agents verify` |
+
+---
+
+## Approval
+
+- [ ] Create QUICKSTART.md
+- [ ] Create templates directory with files
+- [ ] Add verify command to CLI
+- [ ] Update existing documentation
+- [ ] All of the above
