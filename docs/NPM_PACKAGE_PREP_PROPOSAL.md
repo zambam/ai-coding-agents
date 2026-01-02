@@ -56,7 +56,14 @@
 
 ## Phase 1: Dependency Cleanup (2 min)
 
-### Commands
+### Clean Reinstall (Optional - for lock file issues)
+```bash
+# Full reset if experiencing dependency issues
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Prune Commands
 ```bash
 # Remove unused/extraneous packages
 npm prune
@@ -78,6 +85,20 @@ npx cost-of-modules
 
 # Remove identified unused packages
 npm uninstall <package-name>
+```
+
+### Dependency vs DevDependency Audit
+Ensure packages are in the correct bucket:
+
+| Should be `dependencies` | Should be `devDependencies` |
+|--------------------------|----------------------------|
+| openai, pino, zod | typescript, vitest, @types/* |
+| Runtime libraries | Build tools, test frameworks |
+
+```bash
+# Validate production install works
+npm install --production
+node dist/cli.js --help
 ```
 
 ## Phase 2: Package.json Optimization
@@ -162,6 +183,7 @@ This excludes:
 
 ### Pre-Build
 - [ ] Run `npx depcheck` - remove unused deps
+- [ ] Verify dependency vs devDependency placement
 - [ ] Verify all source files in sync
 - [ ] Update version to 1.2.0
 - [ ] Fix repository URL
@@ -175,6 +197,7 @@ This excludes:
 - [ ] Run `npm pack --dry-run` - verify package contents
 - [ ] Test CLI: `node dist/cli.js --help`
 - [ ] Verify exports resolve correctly
+- [ ] Test production install: `npm install --production`
 
 ## Phase 5: Quick Execution Script
 
@@ -191,14 +214,21 @@ npm cache clean --force
 echo "2. Checking for unused deps..."
 npx depcheck --skip-missing || true
 
-echo "3. Building package..."
+echo "3. Verifying dependency placement..."
+echo "Runtime deps: $(npm ls --prod --depth=0 2>/dev/null | wc -l) packages"
+echo "Dev deps: $(npm ls --dev --depth=0 2>/dev/null | wc -l) packages"
+
+echo "4. Building package..."
 npm run build:package
 
-echo "4. Validating package..."
+echo "5. Validating package contents..."
 npm pack --dry-run
 
-echo "5. Testing CLI..."
+echo "6. Testing CLI..."
 node dist/cli.js --help
+
+echo "7. Testing production install..."
+npm install --production --dry-run
 
 echo "Package ready for GitHub push!"
 ```
