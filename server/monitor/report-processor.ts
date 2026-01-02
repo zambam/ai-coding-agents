@@ -79,7 +79,8 @@ export class ReportProcessor {
 
       if (detection.detected && detection.category) {
         failureCategory = detection.category;
-        failureSeverity = detection.severity ?? CATEGORY_SEVERITY_DEFAULTS[detection.category];
+        const cat = detection.category as FailureCategory;
+        failureSeverity = detection.severity ?? CATEGORY_SEVERITY_DEFAULTS[cat];
         patternMatched = detection.matchedPattern;
       }
     }
