@@ -360,19 +360,25 @@ export async function registerRoutes(
   app.get("/api/observer/stats", async (_req: Request, res: Response) => {
     try {
       const { getGlobalObserver } = await import("./agents/learning/observer-config");
+      const { getChatPersistence } = await import("./agents/learning/chat-persistence");
       const observer = getGlobalObserver();
+      const chatService = getChatPersistence();
       
       if (!observer) {
         return res.status(503).json({ error: "Observer not initialized" });
       }
       
+      observer.recordToolExecution("observer_stats_read", true, 0);
+      
       const stats = observer.getSessionStats();
       const config = observer.getConfig();
       const recentInteractions = observer.getRecentInteractions(20);
+      const chatStats = chatService?.getStats();
       
       res.json({
         status: "active",
         sessionStats: stats,
+        chatStats: chatStats || null,
         config: {
           observeConversations: config.observeConversations,
           observeToolExecutions: config.observeToolExecutions,
@@ -416,10 +422,16 @@ export async function registerRoutes(
   app.get("/api/chat/history", async (_req: Request, res: Response) => {
     try {
       const { getChatPersistence } = await import("./agents/learning/chat-persistence");
+      const { getGlobalObserver } = await import("./agents/learning/observer-config");
       const chatService = getChatPersistence();
+      const observer = getGlobalObserver();
       
       if (!chatService) {
         return res.status(503).json({ error: "Chat persistence not initialized" });
+      }
+      
+      if (observer) {
+        observer.recordToolExecution("chat_history_read", true, 0);
       }
       
       const stats = chatService.getStats();
@@ -447,7 +459,9 @@ export async function registerRoutes(
   app.post("/api/chat/record", async (req: Request, res: Response) => {
     try {
       const { getChatPersistence } = await import("./agents/learning/chat-persistence");
+      const { getGlobalObserver } = await import("./agents/learning/observer-config");
       const chatService = getChatPersistence();
+      const observer = getGlobalObserver();
       
       if (!chatService) {
         return res.status(503).json({ error: "Chat persistence not initialized" });
@@ -467,12 +481,16 @@ export async function registerRoutes(
       
       if (type === "tool" && toolName) {
         chatService.recordToolCall(toolName, true);
+        if (observer) observer.recordToolExecution(toolName, true);
       } else if (type === "error" && errorCode) {
         chatService.recordError(errorCode, content);
+        if (observer) observer.recordError(errorCode, content);
       } else if (role === "user") {
         chatService.recordUserMessage(content);
+        if (observer) observer.recordConversation("user", content);
       } else {
         chatService.recordAssistantMessage(content);
+        if (observer) observer.recordConversation("assistant", content);
       }
       
       res.json({ success: true, stats: chatService.getStats() });
