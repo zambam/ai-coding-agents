@@ -44,10 +44,13 @@
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "!dist/__tests__"
   ],
   "scripts": {
-    "build:package": "tsc -p tsconfig.package.json",
+    "clean": "rm -rf dist",
+    "build:package": "npm run clean && tsc -p tsconfig.package.json",
+    "typecheck": "tsc -p tsconfig.package.json --noEmit",
     "prepublishOnly": "npm run build:package"
   },
   "peerDependencies": {

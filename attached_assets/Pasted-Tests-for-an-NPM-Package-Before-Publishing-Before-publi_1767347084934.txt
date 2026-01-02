@@ -1,0 +1,20 @@
+Tests for an NPM Package Before Publishing
+Before publishing an NPM package (or pushing to a Git repository like GitHub), running tests ensures code quality, functionality, and security. Here are common tests and tools:
+
+Unit and Integration Tests: Use frameworks like Jest, Mocha, or the built-in Node.js test runner to verify your code's behavior. Add a "test" script in package.json (e.g., "test": "node --experimental-strip-types --test" or "test": "jest"), and run npm test. This catches bugs early.
+Linting: Check for code style and potential errors with tools like ESLint or JSLint. Add a "lint" script (e.g., "lint": "eslint ." or "lint": "jslint '*.js'"), and run npm run lint. Integrate it into a pretest hook for automation.
+Type Checking: If using TypeScript, run the TypeScript compiler (tsc) via a build or check script (e.g., "typecheck": "tsc --noEmit") to ensure type safety.
+Security Scans: Run npm audit to check for vulnerabilities in dependencies. For deeper scans, use Snyk (integrate via CLI or CI workflows like GitHub Actions).
+Dry-Run Publishing Tests: Use npm pack to generate a .tgz file simulating the published package, then install and test it locally in a consuming project. Combine with npm publish --dry-run to validate metadata without uploading.
+
+Automate these with npm hooks like "pretest": "npm run lint" to run linting before tests, or "prepack": "npm test && npm run build" to ensure everything passes before packaging.
+Cleaning Tools for an NPM Package Before Publishing
+Cleaning removes unnecessary files, dev configurations, and artifacts to keep the published package lean and production-ready. Here's what to use:
+
+Build Artifact Cleanup: Tools like del-cli to delete compiled folders (e.g., ./lib). Add a "clean" script: "clean": "del-cli ./lib", and run it before building (e.g., "build": "npm run clean && tsc").
+Package.json Cleaning: Use clean-publish to strip dev-specific fields (e.g., scripts, private, workspaces) from package.json temporarily during publish. Install it as a dev dependency and run via a script like "publish:clean": "clean-publish --without-publish", or integrate into your publish workflow.
+File Exclusion: Configure .npmignore (similar to .gitignore) or the "files" field in package.json to exclude tests, configs, and dev files from the package. This ensures only essential files are included when running npm pack or publish.
+Log and Temp File Cleanup: In hooks, use commands like "pretest": "rm -rf ./logs" or a custom script (e.g., "cleanLogs": "rm -r ./logs/ && mkdir logs") to remove temporary files before/after tests.
+Dependency Pruning: Run npm prune --production to remove dev dependencies, ensuring a clean install for production.
+
+For Git-specific prep (e.g., before pushing), ensure your repo is clean with git clean -fdx (use cautiously), and commit only necessary files. Use CI tools like GitHub Actions to run all tests and cleans on push/pull requests for consistency.
