@@ -132,3 +132,40 @@ export {
   type Guidelines,
   type AnalyticsResult,
 } from "./client-sdk";
+
+// Express Router Factory (for host projects)
+export {
+  createAgentRouter,
+  detectFailure,
+  categorizeFailure,
+  type IAgentStorage,
+  type AgentReportInput,
+  type AgentReport,
+  type AgentAnalytics,
+  type AgentLogInput,
+  type AgentLog,
+  type LogQueryOptions,
+  type LogStats,
+  type ProjectGuidelines,
+} from "./express-router";
+
+// Drizzle Schema (for host projects)
+export {
+  agentReportsTable,
+  agentLogsTable,
+  projectGuidelinesTable,
+  failurePatternsTable,
+  FAILURE_CATEGORIES,
+  EXTERNAL_AGENT_TYPES,
+  SEVERITY_LEVELS,
+  type FailureCategory,
+  type SeverityLevel,
+} from "./drizzle-schema";
+
+// Project Initialization
+export {
+  initProject,
+  generateStorageScaffold,
+  type InitOptions,
+  type InitResult,
+} from "./init";

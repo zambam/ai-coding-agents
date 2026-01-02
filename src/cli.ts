@@ -3,6 +3,7 @@ import { Orchestrator } from "./agents";
 import { FakeDataScanner, type ScanResult } from "./scanner";
 import { createLogger } from "./logger";
 import { DEFAULT_AGENT_CONFIG, STRICT_AGENT_CONFIG } from "./constants";
+import { initProject, type InitOptions, type InitResult } from "./init";
 import type { AgentType, AgentConfig, ExternalAgentType } from "./types";
 
 const logger = createLogger({ level: "info" });
@@ -44,6 +45,14 @@ interface GenerateRulesOptions {
 
 interface HooksOptions {
   action: 'install' | 'uninstall' | 'status';
+}
+
+interface InitProjectOptions {
+  framework: 'express' | 'fastify' | 'koa' | 'hono';
+  orm: 'drizzle' | 'prisma' | 'none';
+  projectPath: string;
+  projectId?: string;
+  hubUrl?: string;
 }
 
 interface CommandResult {
@@ -502,6 +511,51 @@ fi
   return { success: false, exitCode: 1, message: "Invalid action" };
 }
 
+async function runInit(options: InitProjectOptions): Promise<CommandResult> {
+  console.log("\n=== AI Coding Agents Project Initialization ===\n");
+  console.log(`Framework: ${options.framework}`);
+  console.log(`ORM: ${options.orm}`);
+  console.log(`Path: ${options.projectPath}`);
+  
+  try {
+    const result = await initProject({
+      framework: options.framework,
+      orm: options.orm,
+      projectPath: options.projectPath,
+      projectId: options.projectId,
+      hubUrl: options.hubUrl
+    });
+    
+    if (!result.success) {
+      console.error("\nInitialization failed:");
+      result.errors.forEach(err => console.error(`  - ${err}`));
+      return { success: false, exitCode: 1 };
+    }
+    
+    if (result.filesCreated.length > 0) {
+      console.log("\nFiles created:");
+      result.filesCreated.forEach(f => console.log(`  + ${f}`));
+    }
+    
+    if (result.filesModified.length > 0) {
+      console.log("\nFiles modified:");
+      result.filesModified.forEach(f => console.log(`  ~ ${f}`));
+    }
+    
+    if (result.instructions.length > 0) {
+      console.log("\n=== Next Steps ===");
+      result.instructions.forEach(i => console.log(i));
+    }
+    
+    console.log("\n=== Initialization Complete ===\n");
+    return { success: true, exitCode: 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Initialization failed: ${message}`);
+    return { success: false, exitCode: 1, message };
+  }
+}
+
 function printHelp(): void {
   console.log(`
 AI Coding Agents CLI
@@ -516,6 +570,7 @@ Commands:
   generate-rules <projectId> Generate AGENT_RULES.md for a project
   analytics [projectId]      View failure analytics
   hooks <action>             Manage git hooks (install/uninstall/status)
+  init                       Initialize project for agent reporting
   help                       Show this help message
 
 Options for 'invoke':
@@ -546,6 +601,13 @@ Options for 'hooks':
   uninstall                  Remove ai-agents git hooks
   status                     Show current hook status
 
+Options for 'init':
+  --framework <type>         Framework: express (default), fastify, koa, hono
+  --orm <type>               ORM: drizzle (default), prisma, none
+  --path <dir>               Project path (default: current directory)
+  --project-id <id>          Project identifier (default: directory name)
+  --hub-url <url>            Hub server URL (default: http://localhost:5000)
+
 Environment Variables:
   OPENAI_API_KEY             Required for invoke command
   XAI_API_KEY                Optional for Grok second opinions
@@ -560,6 +622,7 @@ Examples:
   ai-agents analytics my-project --json
   ai-agents hooks install
   ai-agents hooks status
+  ai-agents init --framework express --orm drizzle --hub-url https://my-hub.replit.app
 `);
 }
 
@@ -713,6 +776,35 @@ export async function parseArgs(args: string[]): Promise<CommandResult> {
     }
     
     return manageHooks({ action: action as "install" | "uninstall" | "status" });
+  }
+  
+  if (command === "init") {
+    let framework: InitProjectOptions['framework'] = 'express';
+    let orm: InitProjectOptions['orm'] = 'drizzle';
+    let projectPath = process.cwd();
+    let projectId: string | undefined;
+    let hubUrl: string | undefined;
+    
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === "--framework" && args[i + 1]) {
+        framework = args[i + 1] as InitProjectOptions['framework'];
+        i++;
+      } else if (args[i] === "--orm" && args[i + 1]) {
+        orm = args[i + 1] as InitProjectOptions['orm'];
+        i++;
+      } else if (args[i] === "--path" && args[i + 1]) {
+        projectPath = args[i + 1];
+        i++;
+      } else if (args[i] === "--project-id" && args[i + 1]) {
+        projectId = args[i + 1];
+        i++;
+      } else if (args[i] === "--hub-url" && args[i + 1]) {
+        hubUrl = args[i + 1];
+        i++;
+      }
+    }
+    
+    return runInit({ framework, orm, projectPath, projectId, hubUrl });
   }
   
   console.error(`Error: Unknown command '${command}'`);
